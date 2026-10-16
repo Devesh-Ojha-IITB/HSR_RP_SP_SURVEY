@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mumbai–Ahmedabad High Speed Rail · RP & SP Survey</title>
+<meta name="theme-color" content="#0E2A47">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E2A47; --ink2:#4A5F73; --rail:#1D5F9B; --rail-d:#164A78; --rail-soft:#DDEBF7;
+  --amber:#F5B301; --amber-soft:#FFF3CC; --amber-ink:#6B4A00;
+  --bg:#E9EEF2; --surface:#FFFFFF; --line:#C6D1DA; --ok:#1F7A4D; --err:#B3261E; --err-bg:#FDECEA;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:100px;scroll-padding-bottom:120px}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:400 17px/1.5 'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+.shell{max-width:700px;margin:0 auto}
+
+/* top bar */
+.top{background:var(--ink);color:#fff;display:flex;align-items:center;gap:12px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 16px 12px}
+.top .ttl{flex:1;min-width:0}
+.top h1{margin:0;font-size:18px;line-height:1.2;font-weight:700}
+.top p{margin:2px 0 0;font-size:13px;opacity:.82}
+.chip{border:1.5px solid var(--amber);color:var(--amber);background:transparent;border-radius:999px;
+  padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.chip:focus-visible,.btn:focus-visible,.tile:focus-visible,.pick:focus-visible,.link:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.chip.warn{background:var(--amber);color:var(--ink)}
+
+/* route progress */
+.route{position:sticky;top:0;z-index:20;background:var(--bg);padding:12px 18px 8px;border-bottom:1px solid var(--line)}
+.rail{position:relative;height:26px;margin:0 12px}
+.rail-track{position:absolute;left:0;right:0;top:10px;height:6px;background:var(--line);border-radius:3px}
+.rail-fill{position:absolute;left:0;top:10px;height:6px;background:var(--rail);border-radius:3px;transition:width .45s ease}
+.stop{position:absolute;top:3px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:#fff;border:3px solid var(--line)}
+.stop.done{border-color:var(--rail);background:var(--rail)}
+.stop.now{border-color:var(--amber);background:#fff}
+.train{position:absolute;top:4px;width:32px;height:18px;margin-left:-16px;border-radius:9px 5px 5px 9px;
+  background:radial-gradient(circle at 9px 8px,#fff 2.4px,transparent 3px),radial-gradient(circle at 18px 8px,#fff 2.4px,transparent 3px),var(--amber);
+  box-shadow:0 0 0 2px var(--bg);transition:left .45s ease}
+.rlabels{position:relative;height:18px;margin:2px 12px 0;font-size:12px;color:var(--ink2)}
+.rlabels span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.rlabels span.now{color:var(--ink);font-weight:700}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;margin:16px 12px;padding:22px 18px}
+.h-sec{font-size:25px;line-height:1.2;margin:0 0 4px;font-weight:700}
+.h-sub{margin:0 0 20px;color:var(--ink2);font-size:16px}
+.h-part{font-size:20px;line-height:1.25;margin:26px 0 12px;font-weight:700;padding-top:18px;border-top:2px solid var(--ink)}
+.h-part:first-of-type{margin-top:6px;border-top:0;padding-top:0}
+p.t{margin:0 0 14px}
+.muted{color:var(--ink2)}
+
+/* hero */
+.hero{background:var(--ink);color:#fff;border-radius:18px;overflow:hidden;margin:16px 12px 0}
+.hero svg,.hero img{display:block;width:100%;height:auto}
+.hero-txt{padding:6px 20px 22px}
+.hero-txt h2{margin:0 0 6px;font-size:27px;line-height:1.15}
+.hero-txt p{margin:0;opacity:.88}
+
+/* fields */
+.field{margin:0 0 24px}
+.lbl{display:block;font-weight:700;margin:0 0 6px}
+.opt{font-weight:400;color:var(--ink2);font-size:14px;margin-left:6px}
+.hint{margin:0 0 8px;color:var(--ink2);font-size:15px}
+.inp{width:100%;height:54px;border:2px solid var(--line);border-radius:12px;padding:0 14px;background:#fff}
+textarea.inp{height:auto;min-height:96px;padding:12px 14px}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:42px;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%230E2A47' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 15px center}
+select.inp:invalid{color:#6B7D8E}
+.inp:focus,.adorn:focus-within{outline:3px solid var(--amber);outline-offset:1px;border-color:var(--rail)}
+.adorn{display:flex;align-items:stretch;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.adorn input{border:0;outline:0;height:50px;flex:1;width:100%;min-width:0;padding:0 12px;background:transparent}
+.adorn .u{display:flex;align-items:center;padding:0 13px;background:#F0F4F7;color:var(--ink2);font-weight:700;white-space:nowrap}
+.hm{margin:5px 0 0;font-size:14px;color:var(--rail-d);min-height:20px;font-weight:700}
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(var(--c,2),minmax(0,1fr))}
+.tile{min-height:54px;border:2px solid var(--line);border-radius:12px;background:#fff;font-weight:700;padding:10px 12px;cursor:pointer;text-align:center;line-height:1.25}
+.tile small{display:block;font-weight:400;font-size:13px;color:var(--ink2);margin-top:2px}
+.tile .em{display:block;font-size:24px;line-height:1.2;margin-bottom:2px}
+.tile[aria-pressed="true"]{background:var(--rail);border-color:var(--rail);color:#fff}
+.tile[aria-pressed="true"] small{color:#E4EEF8}
+.tile.long{text-align:left}
+.tile.long b{display:block}
+.tile.long span{display:block;font-weight:400;font-size:15px;margin-top:2px}
+.has-err .inp,.has-err .adorn,.has-err .tile{border-color:var(--err)}
+.err{color:var(--err);font-weight:700;font-size:15px;margin:6px 0 0}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.row2>.field{min-width:0}
+
+.banner{background:var(--amber-soft);border:2px solid var(--amber);color:var(--amber-ink);border-radius:12px;padding:12px 14px;font-weight:700;margin:0 0 20px}
+.banner.bad{background:var(--err-bg);border-color:var(--err);color:var(--err)}
+.banner.good{background:#E3F3EA;border-color:var(--ok);color:#14502F}
+
+/* legs + examples */
+.legblk{border-left:5px solid var(--rail);padding:2px 0 0 14px;margin:0 0 26px}
+.legblk h3{margin:0 0 14px;font-size:20px}
+.ex{background:#F5F8FB;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 12px}
+.ex h4{margin:0 0 8px;font-size:17px}
+.ex ol{list-style:none;margin:0;padding:0}
+.ex .nd{display:flex;gap:10px;align-items:center;padding:4px 0}
+.ex .nd .ic{width:38px;height:38px;border-radius:50%;background:#fff;border:2px solid var(--line);display:grid;place-items:center;font-size:19px;flex:none}
+.ex .nd small{display:block;color:var(--ink2);font-size:13px}
+.ex .xl{margin:0 0 0 18px;padding:5px 0 5px 28px;border-left:4px dashed var(--rail);color:var(--rail-d);font-weight:700;font-size:15px}
+.ex .xl.main{border-left-style:solid;border-left-color:var(--amber)}
+.ex img{max-width:100%;border-radius:10px}
+.link{background:none;border:0;color:var(--rail);font-weight:700;text-decoration:underline;padding:6px 0;cursor:pointer}
+
+/* map + coordinates */
+.map.off{height:auto}
+.map{height:300px;border-radius:14px;border:2px solid var(--line);overflow:hidden;background:#DCE5EC;position:relative}
+.map-note{padding:18px;color:var(--ink2);font-size:15px}
+.map-note b{color:var(--ink)}
+.pac{margin:0 0 10px}
+.pac input,.pac .inp{width:100%}
+.mapbtns{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.mini{border:2px solid var(--rail);background:#fff;color:var(--rail);border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer}
+.mini:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.coordcard{background:var(--rail-soft);border-radius:14px;padding:14px;margin:12px 0 14px}
+.coordcard h4{margin:0 0 8px;font-size:16px}
+.coords{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.coord{background:#fff;border-radius:10px;padding:8px 12px}
+.coord span{display:block;font-size:13px;color:var(--ink2)}
+.coord b{font-size:19px;font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.coord b.empty{color:#8294A5;font-weight:400}
+.addr{margin:10px 0 0;font-size:14px;color:var(--ink2)}
+.cc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+
+/* stated preference */
+.sp{border:2px solid var(--line);border-radius:16px;overflow:hidden;margin:0 0 20px}
+.sp-r{display:grid;grid-template-columns:27% minmax(0,1fr) minmax(0,1fr)}
+.sp-r>div{padding:11px 9px;border-top:1px solid var(--line)}
+.sp-r:first-child>div{border-top:0}
+.sp-r .l{font-weight:700;color:var(--ink2);font-size:14px;display:flex;align-items:center;overflow-wrap:anywhere}
+.sp-r .e{background:#F3F8FD}
+.sp-r .h{background:#FFFAEB}
+.sp-hd .e{background:var(--rail-soft);color:var(--rail-d)}
+.sp-hd .h{background:var(--amber-soft);color:var(--amber-ink)}
+.sp-hd .e,.sp-hd .h{text-align:center;font-weight:700;font-size:16px;line-height:1.2}
+.sp-hd .e .em,.sp-hd .h .em{display:block;font-size:26px;margin-bottom:2px}
+.sp .v{font-size:20px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
+.sp .v.t{font-size:16px;line-height:1.25}
+.sp .v small{display:block;font-size:13px;font-weight:400;color:var(--ink2);margin-top:2px}
+.scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.pick{border:2px solid var(--line);border-radius:12px;background:#fff;padding:12px 6px;min-height:64px;font-weight:700;font-size:14px;line-height:1.2;cursor:pointer}
+.pick.ex1,.pick.ex2{border-color:#9DBEDC}
+.pick.hs1,.pick.hs2{border-color:#EBC96A}
+.pick.ex1[aria-pressed="true"],.pick.ex2[aria-pressed="true"]{background:var(--rail);border-color:var(--rail);color:#fff}
+.pick.hs1[aria-pressed="true"],.pick.hs2[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:var(--ink)}
+.pick.mid[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.has-err .pick{border-color:var(--err)}
+@media (max-width:560px){.scale{grid-template-columns:1fr}.pick{min-height:54px;text-align:left;padding:10px 14px;font-size:16px}}
+.dots{display:flex;gap:6px;margin:0 0 16px}
+.dots i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.dots i.on{background:var(--rail)}
+.dots i.cur{background:var(--amber)}
+
+/* review */
+dl.sum{display:grid;grid-template-columns:42% 1fr;gap:8px 12px;margin:0 0 16px;font-size:16px}
+dl.sum dt{color:var(--ink2)}dl.sum dd{margin:0;font-weight:700;overflow-wrap:anywhere}
+
+/* bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:30;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
+.bar-in{display:flex;gap:10px;max-width:700px;margin:0 auto}
+.btn{height:54px;border-radius:14px;border:2px solid var(--rail);font-weight:700;padding:0 22px;cursor:pointer}
+.btn.pri{flex:1;background:var(--rail);color:#fff}
+.btn.pri:active{background:var(--rail-d)}
+.btn.sec{background:#fff;color:var(--rail)}
+.btn.good{background:var(--ok);border-color:var(--ok)}
+
+/* data panel */
+.panel{position:fixed;inset:0;background:rgba(14,42,71,.58);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.panel[hidden]{display:none}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:700px;max-height:90vh;overflow:auto;padding:20px 18px calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet h2{margin:0 0 4px;font-size:22px}
+.sheet .field{margin-bottom:16px}
+.sheet .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:12px 0}
+.chk input{width:22px;height:22px;margin-top:2px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(104px + env(safe-area-inset-bottom,0px));background:var(--ink);color:#fff;
+  padding:11px 18px;border-radius:12px;z-index:60;font-size:15px;max-width:90%;text-align:center}
+
+a.mini{text-decoration:none;display:inline-block}
+#stage:focus{outline:none}
+.ex-wrap{margin:0 0 20px}
+.ex-wrap summary{cursor:pointer;margin-bottom:10px}
+.ex-wrap summary.link{display:inline-block}
+code{background:#EEF2F5;padding:1px 5px;border-radius:5px;font-size:.92em}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="ttl">
+      <h1 id="projTitle">Mumbai–Ahmedabad HSR</h1>
+      <p>RP &amp; SP survey · IIT Bombay</p>
+    </div>
+    <button class="chip" id="chip" type="button" aria-label="Saved responses and data options">0 saved</button>
+  </header>
+  <nav class="route" id="route" aria-label="Survey progress"></nav>
+  <main id="stage" tabindex="-1"></main>
+</div>
+
+<footer class="bar"><div class="bar-in">
+  <button class="btn sec" id="back" type="button">Back</button>
+  <button class="btn pri" id="next" type="button">Next</button>
+</div></footer>
+
+<div class="panel" id="panel" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="panelTitle" id="sheet"></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   1. CONFIG — the only block you normally need to edit
+   ===================================================================== */
+const CONFIG = {
+  projectTitle: 'Mumbai–Ahmedabad High Speed Rail',
+  shortTitle: 'Mumbai–Ahmedabad HSR',     // shown in the top bar
+
+  // Paste your Google Apps Script Web App URL here (see apps-script.gs).
+  // You can also paste it later inside the app: tap the "saved" button at the top.
+  endpoint: '',
+
+  // Google Maps JavaScript API key (enable "Maps JavaScript API", "Places API (New)"
+  // and "Geocoding API"; restrict the key to your website address).
+  googleMapsApiKey: '',
+  mapId: 'DEMO_MAP_ID',                 // replace with your own Map ID if you create one
+  mapCenter: { lat: 20.6, lng: 73.0 },  // opens on the Mumbai–Ahmedabad corridor
+  mapZoom: 7,
+
+  // Optional photos. Put image files next to index.html and write the file name,
+  // e.g. hero: 'images/hsr.jpg'. Leave '' to use the built-in drawings.
+  images: { hero: '', example1: '', example2: '' },
+
+  // Stated-preference design: the 9 cards from your SP form (3 times x 3 costs).
+  cards: [
+    { n: 1, time: 120, cost: 2000 }, { n: 2, time: 120, cost: 3000 }, { n: 3, time: 120, cost: 5000 },
+    { n: 4, time: 180, cost: 2000 }, { n: 5, time: 180, cost: 3000 }, { n: 6, time: 180, cost: 5000 },
+    { n: 7, time: 250, cost: 2000 }, { n: 8, time: 250, cost: 3000 }, { n: 9, time: 250, cost: 5000 }
+  ],
+  nearWarnKm: 5,                         // warn if origin and destination pins are closer than this (km)
+  randomizeCards: false,                 // true = shuffle card order for each respondent
+  hsr: { waiting: 10, waitingNote: 'Train in every 10 min', comfort: 5, comfortLabel: 'Very Good (5)', booking: 'Instant (Pay and travel)' }
+};
+
+/* =====================================================================
+   2. Option lists (the PDFs do not show your drop-down contents,
+      so these are standard defaults — paste your own lists here)
+   ===================================================================== */
+const OPT = {
+  gender: ['Male', 'Female', 'Other', 'Prefer not to say'],
+  education: ['No formal schooling', 'Primary (up to 5th)', 'Secondary (up to 10th)', 'Higher secondary (12th)',
+    'Diploma / ITI', 'Graduate', 'Postgraduate', 'Doctorate / Professional degree'],
+  occupation: ['Student', 'Salaried – private', 'Salaried – government / PSU', 'Self-employed / Business',
+    'Professional (doctor, lawyer, CA, etc.)', 'Daily wage / Labour', 'Homemaker', 'Retired', 'Unemployed', 'Other'],
+  incomePersonal: ['No income', 'Below ₹10,000', '₹10,000 – ₹25,000', '₹25,000 – ₹50,000', '₹50,000 – ₹1,00,000',
+    '₹1,00,000 – ₹2,00,000', 'Above ₹2,00,000'],
+  incomeHousehold: ['Below ₹25,000', '₹25,000 – ₹50,000', '₹50,000 – ₹1,00,000', '₹1,00,000 – ₹2,00,000',
+    '₹2,00,000 – ₹5,00,000', 'Above ₹5,00,000'],
+  working: ['0', '1', '2', '3', '4', '5', '6 or more'],
+  housing: ['Owned house / flat', 'Rented house / flat', 'Employer / company provided', 'Living with relatives',
+    'Hostel / PG', 'Informal settlement / slum', 'Other'],
+  count: ['0', '1', '2', '3 or more'],
+  city: ['Mumbai (incl. Navi Mumbai, Thane)', 'Palghar / Vasai-Virar', 'Vapi / Valsad / Navsari', 'Surat', 'Bharuch',
+    'Vadodara', 'Anand / Nadiad', 'Ahmedabad / Gandhinagar', 'Other'],
+  site: ['Railway station', 'Airport', 'Bus terminal', 'Toll plaza / highway stop', 'Residence', 'Workplace', 'Other'],
+  purpose: ['Work (usual workplace)', 'Business trip', 'Education', 'Medical', 'Shopping', 'Social / family visit',
+    'Leisure / tourism / religious', 'Returning home', 'Other'],
+  legMode: ['Walk', 'Bicycle', 'Two-wheeler (own)', 'Car (own)', 'Auto-rickshaw', 'E-rickshaw', 'Taxi / cab (Ola, Uber, etc.)',
+    'City bus', 'Suburban / local train', 'Metro', 'Intercity bus', 'Intercity train', 'Flight', 'Other'],
+  booking: [
+    { v: 'Same day (0 days)', short: 'Same day', days: 0 },
+    { v: '1 day before', short: '1 day before', days: 1 },
+    { v: '2 days before', short: '2 days before', days: 2 },
+    { v: '3 days before', short: '3 days before', days: 3 },
+    { v: '4 – 7 days before', short: '4–7 days before', days: 5.5 },
+    { v: '8 – 14 days before', short: '8–14 days before', days: 11 },
+    { v: '15 – 30 days before', short: '15–30 days before', days: 22.5 },
+    { v: 'More than 30 days before', short: '30+ days before', days: 45 },
+    { v: 'Not applicable (private vehicle)', short: 'Not applicable', days: 0 }
+  ]
+};
+
+const MODES = {
+  train: { label: 'Train', emoji: '🚆', cls: ['General / Second sitting (2S)', 'Sleeper (SL)', 'AC Chair Car (CC)', 'Executive Chair Car (EC)',
+    'AC 3 Tier (3A)', 'AC 3 Economy (3E)', 'AC 2 Tier (2A)', 'AC First Class (1A)'] },
+  air:   { label: 'Flight', emoji: '✈️', cls: ['Economy', 'Premium economy', 'Business'] },
+  bus:   { label: 'Bus', emoji: '🚌', cls: ['Non-AC seater', 'AC seater', 'Non-AC sleeper', 'AC sleeper', 'Volvo / multi-axle AC'] },
+  car:   { label: 'Car', emoji: '🚗', cls: ['Own car', 'Company / employer car', 'Rented self-drive car'], noTicket: true },
+  taxi:  { label: 'Taxi', emoji: '🚕', cls: ['Hatchback / sedan cab', 'SUV / MUV cab', 'Shared taxi', 'Company-arranged cab'] }
+};
+
+// Section D comfort scale. Train text is copied word-for-word from your RP form.
+const COMFORT = {
+  train: [
+    ['Very Low Comfort', 'Non-AC coach, highly crowded, noticeable jerks/vibrations, basic seating, high noise levels.'],
+    ['Low Comfort', 'AC available but crowding or cleanliness issues present; noticeable vibration or ride instability.'],
+    ['Moderate Comfort', 'Premium train (e.g., Shatabdi-type service) with AC and reserved seating; good facilities but noticeable vibration.'],
+    ['High Comfort', 'Modern train (e.g., Vande Bharat-type service) with AC, low crowding, smooth ride with minor vibration.'],
+    ['Very High Comfort', 'Fully comfortable journey: AC, no crowding, smooth ride (minimal/no vibration), clean environment, comfortable seating, low noise.']
+  ],
+  other: [
+    ['Very Low Comfort', 'Cramped or highly crowded, hot or very noisy, poor condition of vehicle or seat.'],
+    ['Low Comfort', 'Noticeable crowding, noise or discomfort for much of the journey.'],
+    ['Moderate Comfort', 'Acceptable but ordinary; some crowding, noise or discomfort.'],
+    ['High Comfort', 'Spacious, clean and quiet; smooth ride with only minor discomfort.'],
+    ['Very High Comfort', 'Very spacious, clean and quiet; smooth ride, no crowding, comfortable seating.']
+  ]
+};
+
+const RESP = [  // SP response scale, same wording as your SP form
+  { v: 1, mid: false, cls: 'ex1' }, { v: 2, mid: false, cls: 'ex2' }, { v: 3, cls: 'mid' },
+  { v: 4, cls: 'hs1' }, { v: 5, cls: 'hs2' }
+];
+
+/* =====================================================================
+   3. Helpers + state
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : NaN; };
+const isNum = v => typeof v === 'number' && isFinite(v);
+const fmtINR = n => '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+const hm = m => { m = Math.round(m); if (!(m > 0)) return ''; if (m < 60) return m + ' min'; const h = Math.floor(m / 60), r = m % 60; return h + ' h' + (r ? ' ' + r + ' min' : ''); };
+const norm = o => typeof o === 'string' ? { v: o, l: o } : { v: o.v, l: o.l || o.v, em: o.em, sub: o.sub };
+const bookingOf = v => OPT.booking.find(b => b.v === v);
+
+const mem = {};
+const store = {
+  get(k, f) { try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : f; } catch (e) { return mem[k] !== undefined ? JSON.parse(mem[k]) : f; } },
+  set(k, v) { const s = JSON.stringify(v); try { localStorage.setItem(k, s); return true; } catch (e) { mem[k] = s; return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} delete mem[k]; }
+};
+const KEYS = { draft: 'mahsr.draft.v2', queue: 'mahsr.queue.v2', prefs: 'mahsr.prefs.v2' };
+let prefs = Object.assign({ endpoint: '', test: false, enumerator: '', site: '' }, store.get(KEYS.prefs, {}));
+
+const makeId = () => {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return 'R' + String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate()) + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+};
+const blank = () => ({
+  id: makeId(), startedAt: new Date().toISOString(), step: 'cover',
+  enumerator: prefs.enumerator || '', site: prefs.site || '',
+  origin: {}, dest: {}, legsBefore: [], legsAfter: [], main: {}, spAns: {}
+});
+let D = store.get(KEYS.draft, null) || blank();
+let ERR = {};
+const save = () => store.set(KEYS.draft, D);
+
+function get(path, o = D) { return path.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o); }
+function set(path, val, o = D) {
+  const ks = path.split('.'); let a = o;
+  ks.forEach((k, i) => {
+    if (i === ks.length - 1) a[k] = val;
+    else { if (a[k] == null || typeof a[k] !== 'object') a[k] = /^\d+$/.test(ks[i + 1]) ? [] : {}; a = a[k]; }
+  });
+}
+const mode = () => MODES[D.mainMode] || null;
+const modeLabel = () => (mode() ? mode().label : 'main mode');
+
+/* =====================================================================
+   4. Field renderer + validation
+   ===================================================================== */
+const idOf = key => 'f_' + key.replace(/\./g, '_');
+
+function fieldHTML(f) {
+  if (f.show && !f.show()) return '';
+  const id = idOf(f.key), val = get(f.key), err = ERR[f.key];
+  const optional = f.req === false;
+  let ctl = '';
+  if (f.type === 'text') {
+    ctl = `<input class="inp" id="${id}" data-key="${f.key}" type="text" value="${esc(val)}" autocomplete="off" ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''}>`;
+  } else if (f.type === 'textarea') {
+    ctl = `<textarea class="inp" id="${id}" data-key="${f.key}" rows="3" ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''}>${esc(val)}</textarea>`;
+  } else if (f.type === 'number') {
+    ctl = `<div class="adorn">${f.prefix ? `<span class="u">${esc(f.prefix)}</span>` : ''}<input id="${id}" data-key="${f.key}" ${f.hm ? 'data-hm="1"' : ''} type="number" inputmode="${f.dec ? 'decimal' : 'numeric'}" min="${f.min ?? ''}" max="${f.max ?? ''}" step="${f.dec ? 'any' : '1'}" value="${esc(val)}" placeholder="${esc(f.placeholder || '')}">${f.unit ? `<span class="u">${esc(f.unit)}</span>` : ''}</div>`;
+    if (f.hm) ctl += `<p class="hm" data-hm-for="${f.key}">${isFinite(num(val)) && num(val) >= 60 ? '= ' + hm(num(val)) : ''}</p>`;
+  } else if (f.type === 'select') {
+    const opts = f.options.map(norm);
+    ctl = `<select class="inp" id="${id}" data-key="${f.key}" data-select="1" required><option value="" disabled ${val ? '' : 'selected'}>Please select</option>${opts.map(o => `<option value="${esc(o.v)}" ${String(val) === String(o.v) ? 'selected' : ''}>${esc(o.l)}</option>`).join('')}</select>`;
+  } else if (f.type === 'tiles') {
+    const opts = f.options.map(norm);
+    const cols = f.cols || (f.long ? 1 : (opts.length <= 2 ? 2 : opts.length === 3 ? 3 : opts.length === 4 ? 2 : opts.length <= 6 ? 3 : 4));
+    ctl = `<div class="tiles" style="--c:${cols}" role="group" aria-labelledby="${id}-l">${opts.map(o =>
+      `<button type="button" class="tile${f.long ? ' long' : ''}" data-key="${f.key}" data-val="${esc(o.v)}" aria-pressed="${String(val) === String(o.v)}">${o.em ? `<span class="em" aria-hidden="true">${o.em}</span>` : ''}${f.long ? `<b>${esc(o.l)}</b>${o.sub ? `<span>${esc(o.sub)}</span>` : ''}` : esc(o.l)}${!f.long && o.sub ? `<small>${esc(o.sub)}</small>` : ''}</button>`).join('')}</div>`;
+  }
+  return `<div class="field${err ? ' has-err' : ''}" data-field="${f.key}">
+    <label class="lbl" id="${id}-l" ${f.type === 'tiles' ? '' : `for="${id}"`}>${f.label}${optional ? '<span class="opt">optional</span>' : ''}</label>
+    ${f.hint ? `<p class="hint">${f.hint}</p>` : ''}${ctl}
+    ${err ? `<p class="err" role="alert">${esc(err)}</p>` : ''}</div>`;
+}
+
+function validateFields(fields) {
+  const errs = {};
+  fields.forEach(f => {
+    if (f.show && !f.show()) return;
+    const v = get(f.key);
+    const empty = v === undefined || v === null || String(v).trim() === '';
+    if (f.req !== false && empty) {
+      errs[f.key] = ['text', 'textarea', 'number'].includes(f.type) ? 'Please fill this in.' : 'Please choose an answer.';
+      return;
+    }
+    if (empty) return;
+    if (f.type === 'number') {
+      const n = num(v);
+      if (!isFinite(n)) errs[f.key] = 'Enter a number.';
+      else if (f.min !== undefined && n < f.min) errs[f.key] = f.minMsg || `Enter ${f.min} or more.`;
+      else if (f.max !== undefined && n > f.max) errs[f.key] = f.maxMsg || `Enter ${f.max} or less.`;
+      else if (f.int && !Number.isInteger(n)) errs[f.key] = 'Enter a whole number.';
+    }
+    if (f.check) { const m = f.check(v); if (m) errs[f.key] = m; }
+  });
+  return errs;
+}
+const fieldsHTML = fs => fs.map(fieldHTML).join('');
+
+/* =====================================================================
+   5. Google Maps + coordinates
+   ===================================================================== */
+const MAPS = {};
+let gmapsPromise = null;
+window.gm_authFailure = () => {
+  $$('.map').forEach(el => { el.innerHTML = '<div class="map-note"><b>Google rejected the API key.</b> Check that Maps JavaScript API, Places API (New) and Geocoding API are enabled, billing is on, and the key allows this website address. You can still type the coordinates below.</div>'; });
+};
+function loadMaps() {
+  if (!CONFIG.googleMapsApiKey) return Promise.reject(new Error('nokey'));
+  if (window.google && google.maps && google.maps.importLibrary) return Promise.resolve();
+  if (gmapsPromise) return gmapsPromise;
+  gmapsPromise = new Promise((res, rej) => {
+    window.__gmReady = () => res();
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(CONFIG.googleMapsApiKey) + '&loading=async&libraries=places,marker&v=weekly&callback=__gmReady';
+    s.async = true;
+    s.onerror = () => { gmapsPromise = null; rej(new Error('load')); };
+    document.head.appendChild(s);
+    setTimeout(() => { gmapsPromise = null; rej(new Error('timeout')); }, 15000);
+  });
+  return gmapsPromise;
+}
+
+function parseCoords(s) {
+  if (!s) return null;
+  s = String(s);
+  let m = s.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) || s.match(/(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
+const inIndia = (lat, lng) => lat >= 6 && lat <= 37.5 && lng >= 68 && lng <= 98;
+
+function setFieldError(key, msg) {
+  const box = $(`[data-field="${CSS.escape(key)}"]`);
+  if (!box) return;
+  box.classList.toggle('has-err', !!msg);
+  let p = $('.err', box);
+  if (msg) { if (!p) { p = document.createElement('p'); p.className = 'err'; p.setAttribute('role', 'alert'); box.appendChild(p); } p.textContent = msg; }
+  else if (p) p.remove();
+  if (msg) ERR[key] = msg; else delete ERR[key];
+}
+
+function coordCardHTML(prefix, title) {
+  const o = get(prefix) || {}, ok = isNum(o.lat) && isNum(o.lng);
+  return `<div class="coordcard" id="cc-${prefix}"><h4>${esc(title)}</h4>
+    <div class="coords">
+      <div class="coord"><span>Latitude</span><b data-lat class="${ok ? '' : 'empty'}">${ok ? o.lat.toFixed(6) : 'not set yet'}</b></div>
+      <div class="coord"><span>Longitude</span><b data-lng class="${ok ? '' : 'empty'}">${ok ? o.lng.toFixed(6) : 'not set yet'}</b></div>
+    </div>
+    <p class="addr" data-addr>${esc(o.address || '')}</p>
+    <div class="cc-actions">
+      <button type="button" class="mini" data-act="copy" data-prefix="${prefix}" ${ok ? '' : 'hidden'}>Copy coordinates</button>
+      <a class="mini" data-open target="_blank" rel="noopener" ${ok ? `href="https://www.google.com/maps?q=${o.lat},${o.lng}"` : 'hidden'}>Open in Google Maps</a>
+    </div></div>`;
+}
+function refreshCoord(prefix) {
+  const cc = $('#cc-' + prefix); if (!cc) return;
+  const o = get(prefix) || {}, ok = isNum(o.lat) && isNum(o.lng);
+  const la = $('[data-lat]', cc), ln = $('[data-lng]', cc);
+  la.textContent = ok ? o.lat.toFixed(6) : 'not set yet'; ln.textContent = ok ? o.lng.toFixed(6) : 'not set yet';
+  la.classList.toggle('empty', !ok); ln.classList.toggle('empty', !ok);
+  $('[data-addr]', cc).textContent = o.address || '';
+  $$('[data-act="copy"]', cc).forEach(b => b.hidden = !ok);
+  const a = $('[data-open]', cc); a.hidden = !ok; if (ok) a.href = `https://www.google.com/maps?q=${o.lat},${o.lng}`;
+  const man = $('#man-' + prefix); if (man && document.activeElement !== man) man.value = ok ? `${o.lat}, ${o.lng}` : '';
+}
+function setPoint(prefix, lat, lng, address) {
+  const o = get(prefix) || {};
+  const nl = +(+lat).toFixed(6), ng = +(+lng).toFixed(6), moved = o.lat !== nl || o.lng !== ng;
+  o.lat = nl; o.lng = ng;
+  if (address !== undefined) o.address = address;
+  set(prefix, o); if (moved) delete D.nearOk; save();
+  setFieldError(prefix + '.coord', inIndia(o.lat, o.lng) ? '' : 'These coordinates are outside India. Check that latitude comes first.');
+  refreshCoord(prefix);
+  refreshNear();
+}
+function placePoint(prefix, lat, lng, address) {
+  const inst = MAPS[prefix];
+  if (inst && inst.el === $('#map-' + prefix)) { inst.put(lat, lng); inst.commit(lat, lng, address); }
+  else setPoint(prefix, lat, lng, address);
+}
+function clearPoint(prefix) {
+  const o = get(prefix) || {}; delete o.lat; delete o.lng; delete o.address; set(prefix, o); save();
+  const inst = MAPS[prefix]; if (inst && inst.el === $('#map-' + prefix)) inst.clear();
+  refreshCoord(prefix);
+}
+
+function mapBlockHTML(prefix, what) {
+  const o = get(prefix) || {}, ok = isNum(o.lat) && isNum(o.lng);
+  return `<div class="field${ERR[prefix + '.coord'] ? ' has-err' : ''}" data-field="${prefix}.coord">
+    <label class="lbl" for="man-${prefix}">Please search for trip ${what} address in the map</label>
+    <p class="hint">Search for the place, or tap the map to drop a pin. Drag the pin to fine-tune it.</p>
+    <div class="pac" id="pac-${prefix}"></div>
+    <div class="map" id="map-${prefix}"><div class="map-note">Loading map…</div></div>
+    <div class="mapbtns">
+      <button type="button" class="mini" data-act="gps" data-prefix="${prefix}">Use my location</button>
+      <button type="button" class="mini" data-act="clear" data-prefix="${prefix}">Clear pin</button>
+    </div>
+    ${coordCardHTML(prefix, `Trip ${what} coordinates`)}
+    <label class="lbl" for="man-${prefix}" style="font-weight:400;font-size:15px">Or type / paste coordinates (latitude, longitude)</label>
+    <input class="inp" id="man-${prefix}" data-coordinput="${prefix}" inputmode="decimal" placeholder="19.076090, 72.877426" value="${ok ? `${o.lat}, ${o.lng}` : ''}" autocomplete="off">
+    ${ERR[prefix + '.coord'] ? `<p class="err" role="alert">${esc(ERR[prefix + '.coord'])}</p>` : ''}</div>`;
+}
+
+async function initMap(prefix) {
+  const el = $('#map-' + prefix); if (!el) return;
+  if (!CONFIG.googleMapsApiKey) {
+    el.classList.add('off');
+    el.innerHTML = '<div class="map-note"><b>Google Maps is not connected yet.</b> Add your key in <code>CONFIG.googleMapsApiKey</code> to turn on place search and the pin. Until then, type or paste the coordinates below. In Google Maps, right-click a place and tap the numbers to copy them.</div>';
+    return;
+  }
+  try { await loadMaps(); }
+  catch (e) { el.classList.add('off'); el.innerHTML = '<div class="map-note"><b>Could not load Google Maps</b> (no internet, or a key problem). You can still type the coordinates below.</div>'; return; }
+  if (!document.body.contains(el)) return;
+  try {
+    const gm = google.maps;
+    const [{ Map }, { AdvancedMarkerElement }, places] = await Promise.all([gm.importLibrary('maps'), gm.importLibrary('marker'), gm.importLibrary('places')]);
+    if (!document.body.contains(el)) return;
+    const geocoder = new gm.Geocoder();
+    const cur = get(prefix) || {}, has = isNum(cur.lat) && isNum(cur.lng);
+    el.innerHTML = '';
+    const map = new Map(el, { center: has ? { lat: cur.lat, lng: cur.lng } : CONFIG.mapCenter, zoom: has ? 16 : CONFIG.mapZoom, mapId: CONFIG.mapId, streetViewControl: false, mapTypeControl: false, gestureHandling: 'greedy' });
+    let marker = null;
+    const xy = p => ({ la: typeof p.lat === 'function' ? p.lat() : p.lat, ln: typeof p.lng === 'function' ? p.lng() : p.lng });
+    const commit = (lat, lng, address) => {
+      setPoint(prefix, lat, lng, address);
+      if (address === undefined) geocoder.geocode({ location: { lat, lng } }).then(r => {
+        const a = r && r.results && r.results[0] && r.results[0].formatted_address;
+        if (a) { set(prefix + '.address', a); save(); refreshCoord(prefix); }
+      }).catch(() => {});
+    };
+    const put = (lat, lng) => {
+      if (!marker) {
+        marker = new AdvancedMarkerElement({ map, position: { lat, lng }, gmpDraggable: true, title: 'Drag to adjust' });
+        marker.addListener('dragend', () => { const { la, ln } = xy(marker.position); commit(la, ln); });
+      } else marker.position = { lat, lng };
+      map.panTo({ lat, lng }); if ((map.getZoom() || 0) < 15) map.setZoom(16);
+    };
+    map.addListener('click', e => { const la = e.latLng.lat(), ln = e.latLng.lng(); put(la, ln); commit(la, ln); });
+    if (has) put(cur.lat, cur.lng);
+    MAPS[prefix] = { el, put, commit, clear() { if (marker) { marker.map = null; marker = null; } } };
+
+    const host = $('#pac-' + prefix); host.innerHTML = '';
+    if (places.PlaceAutocompleteElement) {
+      const pac = new places.PlaceAutocompleteElement({ includedRegionCodes: ['in'] });
+      host.appendChild(pac);
+      const onPlace = async place => {
+        await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location'] });
+        if (!place.location) return;
+        const { la, ln } = xy(place.location);
+        put(la, ln); commit(la, ln, place.formattedAddress || place.displayName || '');
+      };
+      pac.addEventListener('gmp-select', ev => { if (ev.placePrediction) onPlace(ev.placePrediction.toPlace()); });
+      pac.addEventListener('gmp-placeselect', ev => { if (ev.place) onPlace(ev.place); });
+    } else {
+      host.innerHTML = '<input class="inp" type="search" placeholder="Search place, then press Enter" aria-label="Search place">';
+      $('input', host).addEventListener('keydown', ev => {
+        if (ev.key !== 'Enter') return;
+        geocoder.geocode({ address: ev.target.value, region: 'in' }).then(r => {
+          const g = r.results && r.results[0]; if (!g) return;
+          const { la, ln } = xy(g.geometry.location); put(la, ln); commit(la, ln, g.formatted_address);
+        }).catch(() => {});
+      });
+    }
+  } catch (e) {
+    el.innerHTML = '<div class="map-note"><b>The map could not start.</b> You can still type the coordinates below.</div>';
+  }
+}
+
+/* =====================================================================
+   6. Illustrations
+   ===================================================================== */
+function heroHTML() {
+  const img = CONFIG.images.hero;
+  const art = img ? `<img src="${esc(img)}" alt="High speed train">` : `
+  <svg viewBox="0 0 700 256" role="img" aria-label="A high speed train running between Mumbai, Surat, Vadodara and Ahmedabad">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E2A47"/><stop offset="1" stop-color="#1D5F9B"/></linearGradient></defs>
+    <rect width="700" height="256" fill="url(#sky)"/>
+    <path d="M0 196 Q110 140 230 182 T470 176 T700 160 V256 H0Z" fill="#0A2038" opacity=".6"/>
+    <rect y="196" width="700" height="6" fill="#2D4A66"/>
+    <path d="M0 214H700" stroke="#F5B301" stroke-width="3" stroke-dasharray="14 10"/>
+    <g fill="#fff" font-size="23" font-weight="700" text-anchor="middle" font-family="Atkinson Hyperlegible,system-ui,sans-serif">
+      <g fill="#F5B301"><circle cx="74" cy="199" r="9"/><circle cx="250" cy="199" r="9"/><circle cx="440" cy="199" r="9"/><circle cx="606" cy="199" r="9"/></g>
+      <text x="74" y="242">Mumbai</text><text x="250" y="242">Surat</text><text x="440" y="242">Vadodara</text><text x="606" y="242">Ahmedabad</text>
+    </g>
+    <g transform="translate(130 128)">
+      <path d="M0 12Q0 0 12 0H300Q362 3 410 38Q420 49 408 58H12Q0 58 0 46Z" fill="#fff"/>
+      <path d="M0 38H414V46H0Z" fill="#1D5F9B"/>
+      <g fill="#0E2A47" opacity=".88">${[0, 1, 2, 3, 4, 5, 6].map(i => `<rect x="${20 + i * 40}" y="12" width="28" height="15" rx="3.5"/>`).join('')}</g>
+      <path d="M312 12Q366 16 392 36H312Z" fill="#0E2A47" opacity=".88"/>
+      <circle cx="404" cy="46" r="4.5" fill="#F5B301"/>
+      <rect x="12" y="58" width="392" height="6" rx="3" fill="#2D4A66"/>
+    </g>
+  </svg>`;
+  return `<section class="hero">${art}<div class="hero-txt"><h2>${esc(CONFIG.projectTitle)}</h2><p>Revealed Preference and Stated Preference survey<br>Conducted by: IIT Bombay</p></div></section>`;
+}
+
+function diagram(items) {
+  return '<ol>' + items.map(it => (it[0] === 'leg' || it[0] === 'main')
+    ? `<li class="xl${it[0] === 'main' ? ' main' : ''}">${esc(it[1])}</li>`
+    : `<li class="nd"><span class="ic" aria-hidden="true">${it[0]}</span><div>${esc(it[1])}${it[2] ? `<small>${esc(it[2])}</small>` : ''}</div></li>`).join('') + '</ol>';
+}
+function examplesHTML(open) {
+  const i1 = CONFIG.images.example1, i2 = CONFIG.images.example2;
+  const ex1 = i1 ? `<img src="${esc(i1)}" alt="Example 1 of splitting a trip into legs">` : diagram([
+    ['🏠', 'Home (origin)'], ['leg', '🛺 Leg 1 · Auto · 10 min'], ['🚉', 'Railway station', '1st halt – transfer 5 min'],
+    ['main', '🚆 Leg 2 · Train · 45 min (main mode)'], ['🚉', 'Railway station', '2nd halt – transfer 5 min'],
+    ['leg', '🛺 Leg 3 · Auto · 15 min'], ['🏢', 'Office (destination)']]);
+  const ex2 = i2 ? `<img src="${esc(i2)}" alt="Example 2 of splitting a trip into legs">` : diagram([
+    ['🏠', 'Home (origin)'], ['leg', '🚶 Leg 1 · Walk · 15 min'], ['🚉', 'Suburban rail station', '1st halt – transfer 10 min'],
+    ['leg', '🚇 Leg 2 · Local train · 30 min'], ['🚉', 'Railway station', '2nd halt – transfer 20 min'],
+    ['main', '🚄 Leg 3 · Vande Bharat · main mode'], ['🚉', 'Railway station', '3rd halt – transfer 15 min'],
+    ['leg', '🚕 Leg 4 · Taxi / cab · 25 min'], ['🏢', 'Office (destination)']]);
+  return `<details class="ex-wrap" ${open ? 'open' : ''}><summary class="link">See examples: how to split a trip into legs</summary>
+    <div class="ex"><h4>Example 1</h4>${ex1}</div><div class="ex"><h4>Example 2</h4>${ex2}</div></details>`;
+}
+
+/* =====================================================================
+   7. Legs
+   ===================================================================== */
+const YN = ['Yes', 'No'];
+function legFields(listKey, startNo) {
+  const list = D[listKey] || [], out = [];
+  list.forEach((leg, i) => {
+    const k = `${listKey}.${i}`, no = startNo + i;
+    out.push({ key: `${k}.mode`, type: 'select', label: `Mode of Travel (L${no})`, options: OPT.legMode });
+    out.push({ key: `${k}.wait`, type: 'number', label: 'Waiting Time', unit: 'mins', min: 0, max: 720, int: true, hm: true });
+    out.push({ key: `${k}.time`, type: 'number', label: 'Travel Time', unit: 'mins', min: 1, max: 1440, int: true, hm: true, minMsg: 'Travel time must be at least 1 minute.' });
+    out.push({ key: `${k}.cost`, type: 'number', label: 'Travel Cost', prefix: '₹', min: 0, max: 200000, dec: true, placeholder: '0 if free' });
+    out.push({ key: `${k}.more`, type: 'tiles', label: 'Do you want to add another leg?', options: YN });
+  });
+  return out;
+}
+function legsHTML(listKey, startNo) {
+  const list = D[listKey] || [];
+  return list.map((leg, i) => {
+    const k = `${listKey}.${i}`, no = startNo + i;
+    const F = legFields(listKey, startNo).filter(f => f.key.startsWith(k + '.'));
+    const by = n => F.find(f => f.key === `${k}.${n}`);
+    return `<div class="legblk"><h3>Leg No. ${no}</h3>${fieldHTML(by('mode'))}<div class="row2">${fieldHTML(by('wait'))}${fieldHTML(by('time'))}</div>${fieldHTML(by('cost'))}${fieldHTML(by('more'))}</div>`;
+  }).join('');
+}
+
+/* =====================================================================
+   8. Calculations
+   ===================================================================== */
+const mainCost = () => num(D.main && D.main.cost);
+/* ---- origin / destination distance check ---- */
+const NEAR_YES = 'Yes, both locations are correct', NEAR_NO = 'No, I will fix the pins';
+function distKm(a, b) {
+  const R = 6371, r = x => x * Math.PI / 180, dLa = r(b.lat - a.lat), dLn = r(b.lng - a.lng);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLn / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function nearInfo() {
+  const o = D.origin || {}, t = D.dest || {};
+  if (!(isNum(o.lat) && isNum(o.lng) && isNum(t.lat) && isNum(t.lng))) return null;
+  const km = distKm(o, t);
+  return { km, near: km < CONFIG.nearWarnKm };
+}
+const fmtDist = km => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(km < 10 ? 1 : 0)} km`;
+function nearBoxHTML() {
+  const i = nearInfo();
+  if (!i || !i.near) return '';
+  const msg = i.km < 0.05 ? 'The origin and destination pins are on the <b>same spot</b>.' : `The origin and destination are only <b>${fmtDist(i.km)}</b> apart.`;
+  return `<div class="banner" role="alert">${msg} This survey is about trips between Mumbai and Surat, Vadodara or Ahmedabad. Please check both pins on the map.</div>`
+    + fieldHTML({ key: 'nearOk', type: 'tiles', label: 'Are both locations correct?', options: [NEAR_YES, NEAR_NO], cols: 1 });
+}
+function nearCheck() {
+  const i = nearInfo();
+  if (!i || !i.near || D.nearOk === NEAR_YES) return {};
+  return { nearOk: D.nearOk === NEAR_NO ? 'Please fix the pin(s) first, then choose “Yes”.' : 'Please confirm both locations are correct, or fix the pins.' };
+}
+let lastNearHTML = null;
+function refreshNear() {
+  const b = $('#nearbox'); if (!b) { lastNearHTML = null; return; }
+  const h = nearBoxHTML();
+  if (h !== lastNearHTML || !b.innerHTML.trim() !== !h) { b.innerHTML = h; lastNearHTML = h; }   // only redraw when it changed
+}
+const syncOn = () => !!(prefs.endpoint || CONFIG.endpoint);
+
+function derive() {
+  const legs = [...(D.legsBefore || []), ...(D.legsAfter || [])];
+  const s = k => legs.reduce((a, l) => a + (num(l[k]) || 0), 0);
+  return {
+    legs_before: (D.legsBefore || []).length, legs_after: (D.legsAfter || []).length,
+    total_time_min: Math.round(s('wait') + s('time') + (num(D.main.wait) || 0) + (num(D.main.time) || 0)),
+    total_cost_inr: Math.round((s('cost') + (mainCost() || 0)) * 100) / 100,
+    main_cost_inr: isFinite(mainCost()) ? Math.round(mainCost() * 100) / 100 : '',
+    od_straight_line_km: nearInfo() ? Math.round(nearInfo().km * 10) / 10 : '',
+    od_close_but_confirmed: D.nearOk === NEAR_YES
+  };
+}
+const COMFORT_NAMES = ['Very Low', 'Low', 'Moderate', 'High', 'Very High'];
+function cardAt(pos) { const n = (D.spOrder || CONFIG.cards.map(c => c.n))[pos]; return CONFIG.cards.find(c => c.n === n); }
+function prefillEnum() {
+  const b = bookingOf(D.booking);
+  D.enumCheck = {
+    time: D.main.time, cost: isFinite(mainCost()) ? mainCost() : '', wait: D.main.wait,
+    comfort: D.comfort, booking: D.booking || (b ? b.v : '')
+  };
+}
+
+/* =====================================================================
+   9. Steps
+   ===================================================================== */
+const head = (t, s) => `<h2 class="h-sec">${t}</h2>${s ? `<p class="h-sub">${s}</p>` : ''}`;
+const part = t => `<h3 class="h-part">${t}</h3>`;
+const card = inner => `<section class="card">${inner}</section>`;
+const originFields = p => [
+  { key: p + '.city', type: 'select', label: p === 'origin' ? 'City / area where the trip started' : 'City / area where the trip ended', options: OPT.city },
+  { key: p + '.locality', type: 'text', label: 'Locality',
+    hint: p === 'origin' ? 'A specific place within the city (e.g., Anand Nagar, Kandivali etc.)' : 'A specific place within the city (e.g., Chandkheda, Palgam etc.)' },
+  { key: p + '.landmark', type: 'text', label: 'Landmark',
+    hint: p === 'origin' ? 'A recognizable natural or artificial feature/building (e.g., Siddhivinayak Temple, KEM Hospital etc.)' : 'A recognizable natural or artificial feature/building (e.g., Sardar Patel Museum, Sabarmati Ashram etc.)' }
+];
+function coordCheck(p) {
+  const o = D[p] || {};
+  return (isNum(o.lat) && isNum(o.lng)) ? {} : { [p + '.coord']: 'Search the place on the map, tap to drop a pin, or type the coordinates.' };
+}
+const tripPlace = (p, what) => ({
+  fields: () => originFields(p),
+  html() {
+    const F = originFields(p);
+    return card((p === 'origin' ? head('Section C: Trip Information', 'Please state as accurately as you can about the following aspects of your previous trip.') + examplesHTML(true) : '')
+      + part(`Trip ${what} Details`) + fieldHTML(F[0]) + mapBlockHTML(p, what) + (p === 'dest' ? `<div id="nearbox">${nearBoxHTML()}</div>` : '') + fieldHTML(F[1]) + fieldHTML(F[2]));
+  },
+  extra: () => Object.assign(coordCheck(p), p === 'dest' ? nearCheck() : {}),
+  enter() { setTimeout(() => initMap(p), 0); }
+});
+
+const STEPS = [
+  { id: 'cover', sec: 'Start', next: 'Start survey',
+    fields: () => [
+      { key: 'enumerator', type: 'text', label: "Enumerator's Name", placeholder: 'Your full name' },
+      { key: 'site', type: 'select', label: 'Where is this interview taking place?', options: OPT.site, req: false },
+      { key: 'consent', type: 'tiles', label: 'The respondent has heard what this survey is about and agrees to take part.', options: ['Yes, agreed', 'No, does not agree'],
+        check: v => v.startsWith('No') ? 'The interview cannot continue without the respondent’s agreement.' : '' }
+    ],
+    html() { return heroHTML() + card((syncOn() ? '' : '<div class="banner">Online sync is <b>off</b> on this device: responses will be saved on this device only. Add the Google Sheet link in the “Saved data” panel.</div>') + `<p class="t">All questions are required unless they are marked <i>optional</i>. You cannot move to the next page until every required question is answered.</p>` + fieldsHTML(this.fields())); }
+  },
+
+  { id: 'A', sec: 'A', fields: () => [
+      { key: 'gender', type: 'tiles', label: 'Gender', options: OPT.gender },
+      { key: 'age', type: 'number', label: 'Age', unit: 'years', min: 18, max: 100, int: true, minMsg: 'Respondents must be 18 or older.' },
+      { key: 'education', type: 'select', label: 'Educational Level', options: OPT.education },
+      { key: 'occupation', type: 'select', label: 'Occupation', options: OPT.occupation },
+      { key: 'incomeP', type: 'select', label: 'Personal Monthly Income (In ₹)', options: OPT.incomePersonal }],
+    html() { return card(head('Section A: Personal Information') + fieldsHTML(this.fields())); }
+  },
+
+  { id: 'B', sec: 'B', fields: () => [
+      { key: 'workers', type: 'tiles', label: 'Number of working members (including yourself)', options: OPT.working, cols: 4 },
+      { key: 'incomeH', type: 'select', label: 'Household Monthly Income (In ₹)', options: OPT.incomeHousehold },
+      { key: 'housing', type: 'select', label: 'What type of housing do you currently live in?', options: OPT.housing },
+      { key: 'cars', type: 'tiles', label: 'No. of Cars', options: OPT.count, cols: 4 },
+      { key: 'twoW', type: 'tiles', label: 'No. of Two-wheelers', options: OPT.count, cols: 4 }],
+    html() { const F = this.fields(); return card(head('Section B: Household Information') + fieldsHTML(F.slice(0, 3)) + part('Vehicle Ownership Details') + fieldsHTML(F.slice(3))); }
+  },
+
+  Object.assign({ id: 'C1', sec: 'C' }, tripPlace('origin', 'Origin')),
+  Object.assign({ id: 'C2', sec: 'C' }, tripPlace('dest', 'Destination')),
+
+  { id: 'C3', sec: 'C', fields: () => [
+      { key: 'purpose', type: 'select', label: 'Trip Purpose', options: OPT.purpose },
+      { key: 'mainMode', type: 'tiles', label: 'Main mode of travel', hint: 'The mode you used for the longest part of the journey.', cols: 3,
+        options: Object.keys(MODES).map(k => ({ v: k, l: MODES[k].label, em: MODES[k].emoji })) },
+      { key: 'cls', type: 'select', show: () => !!mode(), label: D.mainMode === 'train' ? 'Travelling in which Class' : `Which type of ${modeLabel().toLowerCase()} did you use?`,
+        options: mode() ? mode().cls : [] }],
+    html() { return card(head('Section C: Trip Information', 'Trip purpose and main mode') + fieldsHTML(this.fields())); }
+  },
+
+  { id: 'C4', sec: 'C', fields: () => [{ key: 'hasBefore', type: 'tiles', label: 'Did you use any other mode before boarding the main mode?', options: YN }].concat(D.hasBefore === 'Yes' ? legFields('legsBefore', 1) : []),
+    html() {
+      return card(head('Section C: Trip Information', 'Legs before the main mode')
+        + `<p class="t muted">A leg is one separate part of the journey, such as a walk, an auto-rickshaw ride or a local train to reach the main-mode station, airport or bus stop. List them in the order you travelled.</p>`
+        + examplesHTML(false) + fieldHTML(this.fields()[0]) + (D.hasBefore === 'Yes' ? legsHTML('legsBefore', 1) : ''));
+    }
+  },
+
+  { id: 'C5', sec: 'C', fields: () => {
+      const m = mode() || {}, L = modeLabel(), f = [
+        { key: 'main.time', type: 'number', label: `Travel Time – ${L}`, unit: 'mins', min: 1, max: 2880, int: true, hm: true, hint: 'Time spent travelling on the main mode only.' },
+        { key: 'main.cost', type: 'number', label: `Travel Cost – ${L}`, prefix: '₹', min: 0, max: 500000, dec: true,
+          hint: m.noTicket ? 'Total cost of this trip: fuel, toll and parking.' : (D.mainMode === 'taxi' ? 'The fare paid for this trip.' : 'Fare paid for this ticket.') },
+        { key: 'main.wait', type: 'number', label: `Waiting Time – ${L}`, unit: 'mins', min: 0, max: 720, int: true, hm: true,
+          hint: m.noTicket ? 'Enter 0 if you did not wait.' : 'Time spent waiting at the station, airport or stop before departure.' }];
+      return f;
+    },
+    html() { return card(head(`Main Mode: ${esc(modeLabel())}`, 'Section C: Trip Information') + fieldsHTML(this.fields())); }
+  },
+
+  { id: 'C6', sec: 'C', fields: () => [{ key: 'hasAfter', type: 'tiles', label: 'Did you use any other mode after leaving the main mode?', options: YN }].concat(D.hasAfter === 'Yes' ? legFields('legsAfter', (D.legsBefore || []).length + 2) : []),
+    html() {
+      return card(head('Section C: Trip Information', 'Legs after the main mode')
+        + `<p class="t muted">Any part of the journey after you got off the main mode, until you reached your destination.</p>`
+        + examplesHTML(false) + fieldHTML(this.fields()[0]) + (D.hasAfter === 'Yes' ? legsHTML('legsAfter', (D.legsBefore || []).length + 2) : ''));
+    }
+  },
+
+  { id: 'D', sec: 'D', enter() { if (mode() && mode().noTicket) D.booking = 'Not applicable (private vehicle)'; },
+    fields: () => {
+      const f = [{ key: 'comfort', type: 'tiles', long: true, cols: 1, label: `How would you rate the comfort of your current ${modeLabel().toLowerCase()} trip?`,
+        options: (D.mainMode === 'train' ? COMFORT.train : COMFORT.other).map((c, i) => ({ v: String(i + 1), l: `${i + 1} – ${c[0]}`, sub: c[1] })) }];
+      if (!(mode() && mode().noTicket)) f.push({ key: 'booking', type: 'select', label: 'How many days before your journey did you purchase this ticket?',
+        options: OPT.booking.filter(b => !b.v.startsWith('Not applicable')).map(b => b.v) });
+      return f;
+    },
+    html() {
+      const F = this.fields();
+      return card(head('Section D: Comfort and Ticket Booking Behaviour') + fieldHTML(F[0]) + part('Ticket Purchase Behaviour')
+        + (F[1] ? fieldHTML(F[1]) : '<p class="t muted">Not applicable for a private vehicle.</p>'));
+    }
+  },
+
+  { id: 'E', sec: 'SP', next: 'Confirm and continue',
+    enter() { const snap = JSON.stringify([D.main, D.comfort, D.booking, D.mainMode]); if (!D.enumCheck || D.enumSrc !== snap) { prefillEnum(); D.enumSrc = snap; } },
+    fields: () => [
+      { key: 'enumCheck.time', type: 'number', label: `Travel Time – ${modeLabel()}`, unit: 'mins', min: 1, max: 2880, int: true, hm: true },
+      { key: 'enumCheck.cost', type: 'number', label: `Travel Cost – ${modeLabel()}`, prefix: '₹', min: 0, max: 500000, dec: true },
+      { key: 'enumCheck.wait', type: 'number', label: 'Waiting Time', unit: 'mins', min: 0, max: 720, int: true, hm: true },
+      { key: 'enumCheck.comfort', type: 'select', label: 'Comfort', options: [1, 2, 3, 4, 5].map(n => ({ v: String(n), l: `${COMFORT_NAMES[n - 1]} (${n})` })) },
+      { key: 'enumCheck.booking', type: 'select', label: 'Ticket Booking Time', options: OPT.booking.map(b => b.v) },
+      { key: 'enumRemarks', type: 'textarea', label: 'Enumerator remarks', req: false, placeholder: 'Anything unusual about this interview' }],
+    html() {
+      return card(head('Below fields are to be filled by enumerator only!', 'Please check these values before handing the device to the respondent.')
+        + `<div class="banner">These are the respondent’s own ${esc(modeLabel().toLowerCase())} trip values. They appear in the “Existing” column of every choice card. Correct anything that looks wrong.</div>`
+        + fieldsHTML(this.fields()) + `<button type="button" class="link" data-act="enumreset">Reset to the respondent’s answers</button>`);
+    }
+  },
+
+  { id: 'SP0', sec: 'SP', next: 'Start choice cards',
+    enter() { if (!D.spOrder) { const o = CONFIG.cards.map(c => c.n); if (CONFIG.randomizeCards) o.sort(() => Math.random() - .5); D.spOrder = o; } },
+    fields: () => [],
+    html() {
+      return card(head('Stated Preference Survey', 'Please indicate your preference between existing and proposed mode of travel based on the given characteristics.')
+        + `<p class="t">You will see ${CONFIG.cards.length} cards. Each card compares the trip you just described with a new <b>High Speed Rail</b> service for the same journey.</p>
+        <div class="sp" aria-hidden="true"><div class="sp-r sp-hd"><div class="l"></div><div class="e"><span class="em">${esc(mode() ? mode().emoji : '🚆')}</span>Existing</div><div class="h"><span class="em">🚄</span>High Speed Rail</div></div></div>
+        <p class="t">Compare the travel time, cost, waiting time, comfort and ticket booking time. Then choose one of the five answers, from “Definitely ${esc(modeLabel())}” to “Definitely HSR”.</p>
+        <p class="t">There are no right or wrong answers. Assume High Speed Rail is available for this same journey.</p>`);
+    }
+  }
+];
+
+CONFIG.cards.forEach((c, i) => STEPS.push({
+  id: 'SP' + (i + 1), sec: 'SP', pos: i, next: i === CONFIG.cards.length - 1 ? 'Review answers' : 'Next card',
+  fields: () => [],
+  extra() { const c2 = cardAt(i); return get(`spAns.${c2.n}.resp`) ? {} : { [`spAns.${c2.n}.resp`]: 'Choose one of the five answers to continue.' }; },
+  html() {
+    const c2 = cardAt(i), ex = D.enumCheck || {}, L = modeLabel(), key = `spAns.${c2.n}.resp`, cur = get(key);
+    const mins = v => { const n = num(v); return `${isFinite(n) ? n : '–'} mins${n >= 60 ? `<small>= ${hm(n)}</small>` : ''}`; };
+    const b = bookingOf(ex.booking), cn = parseInt(ex.comfort, 10);
+    const row = (l, a, h, t) => `<div class="sp-r"><div class="l">${l}</div><div class="e v${t ? ' t' : ''}">${a}</div><div class="h v${t ? ' t' : ''}">${h}</div></div>`;
+    const labels = [`Definitely ${L}`, 'May be Existing', 'Can’t Say', 'May be HSR', 'Definitely HSR'];
+    return card(`<div class="dots" aria-hidden="true">${CONFIG.cards.map((_, j) => `<i class="${j === i ? 'cur' : (get(`spAns.${cardAt(j).n}.resp`) ? 'on' : '')}"></i>`).join('')}</div>`
+      + head(`Card No. ${i + 1}`, `of ${CONFIG.cards.length} · Stated Preference Survey`)
+      + `<div class="sp"><div class="sp-r sp-hd"><div class="l"></div><div class="e"><span class="em">${esc(mode() ? mode().emoji : '🚆')}</span>${esc(L)}</div><div class="h"><span class="em">🚄</span>High Speed Rail</div></div>`
+      + row('Travel Time', mins(ex.time), mins(c2.time))
+      + row('Travel Cost', fmtINR(num(ex.cost) || 0), fmtINR(c2.cost))
+      + row('Waiting Time', mins(ex.wait), `${mins(CONFIG.hsr.waiting).replace(/<small>.*$/, '')}<small>${esc(CONFIG.hsr.waitingNote)}</small>`)
+      + row('Comfort', cn ? `${COMFORT_NAMES[cn - 1]} (${cn})` : '–', esc(CONFIG.hsr.comfortLabel), true)
+      + row('Ticket Booking Time', esc(b ? b.short : (ex.booking || '–')), esc(CONFIG.hsr.booking), true)
+      + `</div><div class="field${ERR[key] ? ' has-err' : ''}" data-field="${key}"><label class="lbl" id="resp-l">Which would you choose?</label>
+        <div class="scale" role="group" aria-labelledby="resp-l">${RESP.map((r, j) => `<button type="button" class="pick ${r.cls}" data-card="${c2.n}" data-val="${r.v}" aria-pressed="${String(cur) === String(r.v)}">${esc(labels[j])}</button>`).join('')}</div>
+        ${ERR[key] ? `<p class="err" role="alert">${esc(ERR[key])}</p>` : ''}</div>`);
+  }
+}));
+
+STEPS.push({ id: 'R', sec: 'Done', next: 'Save response', fields: () => [],
+  html() {
+    const d = derive(), o = D.origin || {}, t = D.dest || {}, n = CONFIG.cards.filter(c => get(`spAns.${c.n}.resp`)).length;
+    const row = (a, b) => `<dt>${esc(a)}</dt><dd>${esc(b == null || b === '' ? '–' : b)}</dd>`;
+    return card(head('Review and save', 'Check the summary, then save this response.')
+      + `<dl class="sum">${row('Response ID', D.id)}${row('Enumerator', D.enumerator)}${row('Respondent', `${D.gender || '–'}, ${D.age || '–'} years`)}
+        ${row('From', `${o.locality || '–'} (${o.city || '–'})`)}${row('Origin coordinates', isNum(o.lat) ? `${o.lat}, ${o.lng}` : '')}
+        ${row('To', `${t.locality || '–'} (${t.city || '–'})`)}${row('Destination coordinates', isNum(t.lat) ? `${t.lat}, ${t.lng}` : '')}
+        ${row('Purpose', D.purpose)}${row('Main mode', `${modeLabel()} · ${D.cls || ''}`)}
+        ${row('Legs', `${d.legs_before} before, ${d.legs_after} after`)}${row('Door-to-door time', hm(d.total_time_min))}
+        ${row('Total cost', fmtINR(d.total_cost_inr))}${row('Origin to destination', nearInfo() ? fmtDist(nearInfo().km) + ' in a straight line' : '')}${row('Choice cards answered', `${n} of ${CONFIG.cards.length}`)}</dl>
+        ${syncOn() ? '<p class="muted">When you save, this response is sent to your Google Sheet automatically.</p>' : '<div class="banner">No Google Sheet is connected, so this response will be saved on this device only.</div>'}
+        <label class="lbl" for="f_finalNotes">Anything else to note? <span class="opt">optional</span></label>
+        <textarea class="inp" id="f_finalNotes" data-key="finalNotes" rows="3">${esc(D.finalNotes)}</textarea>`);
+  }
+});
+
+/* =====================================================================
+   10. Engine: render, navigation, events
+   ===================================================================== */
+const stage = $('#stage');
+const SECS = ['Start', 'A', 'B', 'C', 'D', 'SP', 'Done'];
+let DONE = null;
+const stepIdx = () => Math.max(0, STEPS.findIndex(s => s.id === D.step));
+const cur = () => STEPS[stepIdx()];
+const hasData = l => Object.values(l || {}).some(v => v !== undefined && v !== '');
+
+function buildRoute() {
+  const pct = k => k / (SECS.length - 1) * 100;
+  $('#route').innerHTML = `<div class="rail" id="rail" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Survey progress">
+      <div class="rail-track"></div><div class="rail-fill" id="rfill"></div>
+      ${SECS.map((n, k) => `<span class="stop" data-k="${k}" style="left:${pct(k)}%"></span>`).join('')}
+      <span class="train" id="rtrain"></span></div>
+    <div class="rlabels">${SECS.map((n, k) => `<span data-k="${k}" style="left:${pct(k)}%">${n}</span>`).join('')}</div>`;
+}
+function updateRoute() {
+  const s = DONE ? STEPS[STEPS.length - 1] : cur(), si = SECS.indexOf(s.sec);
+  const inSec = STEPS.filter(x => x.sec === s.sec), frac = (DONE || s.sec === 'Done') ? 0 : inSec.indexOf(s) / inSec.length;
+  const pos = Math.min(1, (si + frac) / (SECS.length - 1));
+  $('#rfill').style.width = pos * 100 + '%'; $('#rtrain').style.left = pos * 100 + '%';
+  $('#rail').setAttribute('aria-valuenow', Math.round(pos * 100));
+  $$('#route .stop').forEach(e => { const k = +e.dataset.k; e.className = 'stop' + (k < si ? ' done' : k === si ? ' now' : ''); });
+  $$('#route .rlabels span').forEach(e => e.classList.toggle('now', +e.dataset.k === si));
+}
+
+function render(keepScroll) {
+  if (DONE) { renderDone(); return; }
+  const y = window.scrollY, s = cur();
+  if (s.enter) s.enter();
+  stage.innerHTML = s.html();
+  const n = Object.keys(ERR).length;
+  if (n) { const c = $('.card', stage); if (c) c.insertAdjacentHTML('afterbegin', `<div class="banner bad" role="alert">${n} question${n > 1 ? 's' : ''} still need${n > 1 ? '' : 's'} an answer. ${n > 1 ? 'They are' : 'It is'} marked in red.</div>`); }
+  $('#back').hidden = stepIdx() === 0;
+  $('#next').textContent = s.next || 'Next';
+  $('#next').className = 'btn pri' + (s.id === 'R' ? ' good' : '');
+  updateRoute(); updateChip();
+  if (keepScroll) window.scrollTo(0, y); else { window.scrollTo(0, 0); stage.focus({ preventScroll: true }); }
+}
+function go(d) {
+  const i = Math.min(STEPS.length - 1, Math.max(0, stepIdx() + d));
+  D.step = STEPS[i].id; ERR = {}; save(); render(false);
+}
+function focusFirstError() {
+  const e = $('.has-err', stage); if (!e) return;
+  e.scrollIntoView({ block: 'center', behavior: 'auto' });
+  const c = $('input,select,textarea,button', e); if (c) c.focus({ preventScroll: true });
+}
+function validateStep(s) { return Object.assign({}, validateFields(s.fields ? s.fields() : []), s.extra ? s.extra() : {}); }
+
+$('#next').addEventListener('click', () => {
+  if (DONE) { DONE = null; D = blank(); save(); render(false); return; }
+  const s = cur(), errs = validateStep(s);
+  if (Object.keys(errs).length) { ERR = errs; render(true); focusFirstError(); return; }
+  ERR = {};
+  if (s.id === 'R') { finish(); return; }
+  go(1);
+});
+$('#back').addEventListener('click', () => { if (!DONE) go(-1); });
+
+function afterSet(key, val) {
+  let m;
+  if (key === 'mainMode') {
+    const mm = MODES[val];
+    if (D.cls && !mm.cls.includes(D.cls)) delete D.cls;
+    if (mm.noTicket) D.booking = 'Not applicable (private vehicle)';
+    else if (D.booking && D.booking.startsWith('Not applicable')) delete D.booking;
+    if (D.comfort && (val === 'train') !== (D._comfortFor === 'train')) delete D.comfort;
+    D._comfortFor = val;
+  } else if (key === 'hasBefore' || key === 'hasAfter') {
+    const lk = key === 'hasBefore' ? 'legsBefore' : 'legsAfter';
+    if (val === 'Yes' && !D[lk].length) D[lk].push({});
+    if (val === 'No' && D[lk].length) {
+      if (D[lk].some(hasData) && !confirm('Remove the legs you have entered?')) { D[key] = 'Yes'; return; }
+      D[lk] = [];
+    }
+  } else if ((m = key.match(/^(legsBefore|legsAfter)\.(\d+)\.more$/))) {
+    const list = D[m[1]], i = +m[2];
+    if (val === 'Yes' && i === list.length - 1) { if (list.length < 6) list.push({}); else { toast('You can add up to 6 legs.'); set(key, 'No'); } }
+    else if (val === 'No' && list.length > i + 1) {
+      if (list.slice(i + 1).some(hasData) && !confirm('Remove the later legs you have entered?')) { set(key, 'Yes'); return; }
+      list.length = i + 1;
+    }
+  }
+}
+
+stage.addEventListener('input', e => {
+  const t = e.target, key = t.dataset && t.dataset.key;
+  if (!key || t.tagName === 'BUTTON') return;
+  set(key, t.value);
+  if (ERR[key]) setFieldError(key, '');
+  if (t.dataset.hm) { const p = $(`[data-hm-for="${CSS.escape(key)}"]`); const n = num(t.value); if (p) p.textContent = n >= 60 ? '= ' + hm(n) : ''; }
+  save();
+});
+stage.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.select) { set(t.dataset.key, t.value); if (ERR[t.dataset.key]) setFieldError(t.dataset.key, ''); afterSet(t.dataset.key, t.value); save(); }
+  if (t.dataset.coordinput) {
+    const p = t.dataset.coordinput, c = parseCoords(t.value);
+    if (!t.value.trim()) return;
+    if (!c) { setFieldError(p + '.coord', 'Could not read these coordinates. Use the format 19.076090, 72.877426.'); return; }
+    setFieldError(p + '.coord', ''); placePoint(p, c.lat, c.lng);
+  }
+});
+stage.addEventListener('click', e => {
+  const tile = e.target.closest('.tile[data-key]');
+  if (tile) {
+    const key = tile.dataset.key, val = tile.dataset.val;
+    set(key, val); delete ERR[key]; afterSet(key, val); save(); render(true); return;
+  }
+  const pick = e.target.closest('.pick');
+  if (pick) {
+    const n = pick.dataset.card, c = CONFIG.cards.find(x => String(x.n) === n), ex = D.enumCheck || {};
+    D.spAns[n] = Object.assign(D.spAns[n] || {}, { resp: +pick.dataset.val, answered_at: new Date().toISOString() });
+    delete ERR[`spAns.${n}.resp`]; save(); render(true); return;
+  }
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const p = a.dataset.prefix;
+  if (a.dataset.act === 'enumreset') { prefillEnum(); D.enumSrc = JSON.stringify([D.main, D.comfort, D.booking, D.mainMode]); save(); render(true); toast('Reset to the respondent’s answers.'); }
+  if (a.dataset.act === 'clear') clearPoint(p);
+  if (a.dataset.act === 'copy') { const o = get(p) || {}; const t = `${o.lat}, ${o.lng}`; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Coordinates copied.')).catch(() => toast(t)); }
+  if (a.dataset.act === 'gps') {
+    if (!navigator.geolocation) { toast('This device cannot share its location.'); return; }
+    a.disabled = true; a.textContent = 'Finding location…';
+    navigator.geolocation.getCurrentPosition(pos => { a.disabled = false; a.textContent = 'Use my location'; placePoint(p, pos.coords.latitude, pos.coords.longitude); },
+      () => { a.disabled = false; a.textContent = 'Use my location'; toast('Could not get the location. Allow location access or search on the map.'); },
+      { enableHighAccuracy: true, timeout: 12000 });
+  }
+});
+
+/* =====================================================================
+   11. Saving, syncing, exporting
+   ===================================================================== */
+const queue = () => store.get(KEYS.queue, []);
+const keyed = arr => { const o = {}; (arr || []).forEach((x, i) => { o[i + 1] = x; }); return o; };
+function flat(o, p, out) {
+  out = out || {}; p = p || '';
+  Object.keys(o).forEach(k => {
+    const v = o[k], key = p ? p + '_' + k : k;
+    if (v && typeof v === 'object') flat(v, key, out); else out[key] = v === undefined || v === null ? '' : v;
+  });
+  return out;
+}
+function buildRecord() {
+  const d = derive(), ex = D.enumCheck || {}, o = D.origin || {}, t = D.dest || {};
+  const sp = {};
+  (D.spOrder || CONFIG.cards.map(c => c.n)).forEach((n, pos) => {
+    const c = CONFIG.cards.find(x => x.n === n), a = D.spAns[n] || {};
+    sp['card' + n] = { position: pos + 1, response: a.resp || '', answered_at: a.answered_at || '',
+      hsr_time_min: c.time, hsr_cost_inr: c.cost, hsr_wait_min: CONFIG.hsr.waiting, hsr_comfort: CONFIG.hsr.comfort,
+      existing_time_min: ex.time, existing_cost_inr: ex.cost, existing_wait_min: ex.wait, existing_comfort: ex.comfort, existing_booking: ex.booking };
+  });
+  const place = p => ({ city: p.city, lat: p.lat, lng: p.lng, address: p.address, locality: p.locality, landmark: p.landmark });
+  return {
+    id: D.id, test: !!prefs.test, started_at: D.startedAt, saved_at: new Date().toISOString(),
+    duration_s: Math.round((Date.now() - Date.parse(D.startedAt)) / 1000), enumerator: D.enumerator, site: D.site || '', consent: D.consent,
+    A_gender: D.gender, A_age: D.age, A_education: D.education, A_occupation: D.occupation, A_income_personal: D.incomeP,
+    B_working_members: D.workers, B_income_household: D.incomeH, B_housing: D.housing, B_cars: D.cars, B_two_wheelers: D.twoW,
+    C_origin: place(o), C_dest: place(t), C_purpose: D.purpose, C_main_mode: modeLabel(), C_class: D.cls,
+    C_legs_before: keyed(D.legsBefore), C_legs_after: keyed(D.legsAfter),
+    C_main: { time_min: D.main.time, cost_inr: D.main.cost, wait_min: D.main.wait },
+    D_comfort: D.comfort, D_booking: D.booking,
+    SP_check: { time_min: ex.time, cost_inr: ex.cost, wait_min: ex.wait, comfort: ex.comfort, booking: ex.booking, remarks: D.enumRemarks || '' },
+    SP: sp, derived: d, notes: D.finalNotes || ''
+  };
+}
+function finish() {
+  const rec = buildRecord(), q = queue();
+  q.push({ id: rec.id, synced: false, savedAt: rec.saved_at, data: rec });
+  store.set(KEYS.queue, q);
+  prefs.enumerator = D.enumerator; prefs.site = D.site || ''; store.set(KEYS.prefs, prefs);
+  store.del(KEYS.draft);
+  DONE = { id: rec.id, syncing: true, msg: '' };
+  render(false);
+  syncAll().then(r => { if (DONE && DONE.id === rec.id) { DONE.syncing = false; DONE.res = r; renderDone(true); } });
+}
+function renderDone(keep) {
+  const q = queue().find(r => r.id === DONE.id), synced = q && q.synced, ep = prefs.endpoint || CONFIG.endpoint;
+  const status = DONE.syncing ? '<div class="banner">Saving to your sheet…</div>'
+    : synced ? '<div class="banner good">Saved on this device and sent to your Google Sheet.</div>'
+    : ep ? '<div class="banner bad">Saved on this device. Could not reach the Google Sheet. It will retry when the internet is back, or use “Sync now” in the saved-data panel.</div>'
+    : '<div class="banner">Saved on this device only. Add your Google Sheet link in the saved-data panel to send responses online, or download the CSV.</div>';
+  stage.innerHTML = card(`<h2 class="h-sec">Response saved</h2><p class="h-sub">Thank you. Please hand the device back to the enumerator.</p>${status}
+    <dl class="sum"><dt>Response ID</dt><dd>${esc(DONE.id)}</dd><dt>Saved on this device</dt><dd>${queue().length}</dd><dt>Waiting to sync</dt><dd>${queue().filter(r => !r.synced).length}</dd></dl>`);
+  $('#back').hidden = true; $('#next').textContent = 'Start next survey'; $('#next').className = 'btn pri';
+  updateRoute(); updateChip(); if (!keep) window.scrollTo(0, 0);
+}
+
+// Sends one response. 'ok' = Google confirmed. 'opaque' = the request reached Google but the browser
+// would not let us read the reply (a CORS quirk). The sheet ignores repeats of the same id, so this is safe.
+async function postOne(url, body) {
+  const headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+  try {
+    const res = await fetch(url, { method: 'POST', headers, body });
+    const j = await res.json();
+    return j && j.ok ? 'ok' : 'fail';
+  } catch (e) {
+    try { await fetch(url, { method: 'POST', mode: 'no-cors', headers, body }); return 'opaque'; } catch (e2) { return 'fail'; }
+  }
+}
+async function testConnection() {
+  const url = prefs.endpoint || CONFIG.endpoint;
+  if (!url) { toast('Add the Google Sheet link first.'); return; }
+  try {
+    const j = await (await fetch(url)).json();
+    toast(j && j.ok ? 'Connected. Your Google Sheet script is answering.' : 'Reached the link, but it did not answer as expected. Check the deployment.');
+  } catch (e) {
+    try { await fetch(url, { mode: 'no-cors' }); toast('Reached Google, but the reply cannot be read here. Save one test response to confirm.'); }
+    catch (e2) { toast('Could not reach the link. Check the internet connection and the web app URL.'); }
+  }
+}
+
+let syncing = false;
+async function syncAll() {
+  const url = prefs.endpoint || CONFIG.endpoint;
+  if (!url) return { sent: 0, failed: 0, none: true };
+  if (syncing) return { sent: 0, failed: 0, busy: true };
+  syncing = true; let sent = 0, failed = 0;
+  try {
+    const q = queue();
+    for (const r of q) {
+      if (r.synced) continue;
+      const out = await postOne(url, JSON.stringify(flat(r.data)));
+      if (out === 'ok') { r.synced = true; sent++; }
+      else if (out === 'opaque') { r.synced = true; r.unconfirmed = true; sent++; }
+      else failed++;
+    }
+    store.set(KEYS.queue, q);
+  } finally { syncing = false; }
+  updateChip();
+  return { sent, failed };
+}
+window.addEventListener('online', () => { syncAll(); });
+
+const csvCell = v => { const s = String(v == null ? '' : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+function toCSV(rows) {
+  const cols = []; rows.forEach(r => Object.keys(r).forEach(k => { if (!cols.includes(k)) cols.push(k); }));
+  return '\ufeff' + [cols.map(csvCell).join(',')].concat(rows.map(r => cols.map(c => csvCell(r[c])).join(','))).join('\r\n');
+}
+function download(name, text, type) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 600);
+}
+
+/* =====================================================================
+   12. Saved-data panel, toast, init
+   ===================================================================== */
+let toastTimer;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3500); }
+function updateChip() {
+  const q = queue(), pend = q.filter(r => !r.synced).length, c = $('#chip');
+  c.textContent = q.length ? `${q.length} saved${pend ? ' · ' + pend + ' to sync' : ''}` : 'Saved data';
+  c.classList.toggle('warn', pend > 0);
+}
+function openPanel() {
+  const q = queue(), pend = q.filter(r => !r.synced).length;
+  $('#sheet').innerHTML = `<h2 id="panelTitle">Saved data</h2>
+    <p class="muted">Every finished response is stored on this device first, so nothing is lost without internet.</p>
+    <dl class="sum"><dt>Saved responses</dt><dd>${q.length}</dd><dt>Waiting to sync</dt><dd>${pend}</dd>${q.some(r => r.unconfirmed) ? `<dt>Sent, not confirmed</dt><dd>${q.filter(r => r.unconfirmed).length}</dd>` : ''}</dl>
+    ${syncOn() ? '' : '<div class="banner">No Google Sheet link yet. Responses stay on this device until you add one.</div>'}
+    ${q.some(r => r.unconfirmed) ? '<p class="hint">“Not confirmed” means the request reached Google but the browser could not read the reply. Check that these rows are in your sheet.</p>' : ''}
+    <div class="field"><label class="lbl" for="p_ep">Google Sheet link <span class="opt">optional</span></label>
+      <p class="hint">Paste the web app URL from your Apps Script (see apps-script.gs).</p>
+      <input class="inp" id="p_ep" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(prefs.endpoint || CONFIG.endpoint)}"></div>
+    <label class="chk"><input type="checkbox" id="p_test" ${prefs.test ? 'checked' : ''}><span>Mark new responses as <b>test</b> (pilot) data</span></label>
+    <div class="acts"><button class="btn pri" data-p="sync" type="button">Sync now</button><button class="btn sec" data-p="test" type="button">Test connection</button>
+      <button class="btn sec" data-p="csv" type="button">Download CSV</button><button class="btn sec" data-p="json" type="button">Download JSON</button>
+      <button class="btn sec" data-p="purge" type="button" style="grid-column:1/-1">Clear synced responses from this device</button></div>
+    <button class="btn sec" style="width:100%" data-p="close" type="button">Close</button>`;
+  $('#panel').hidden = false; $('#p_ep').blur();
+}
+const closePanel = () => { $('#panel').hidden = true; };
+$('#chip').addEventListener('click', openPanel);
+$('#panel').addEventListener('click', e => { if (e.target.id === 'panel') closePanel(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+$('#sheet').addEventListener('change', e => {
+  if (e.target.id === 'p_ep') { prefs.endpoint = e.target.value.trim(); store.set(KEYS.prefs, prefs); toast('Sheet link saved.'); }
+  if (e.target.id === 'p_test') { prefs.test = e.target.checked; store.set(KEYS.prefs, prefs); }
+});
+$('#sheet').addEventListener('click', async e => {
+  const b = e.target.closest('[data-p]'); if (!b) return;
+  const act = b.dataset.p, stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  if (act === 'close') closePanel();
+  if (act === 'csv') { const q = queue(); if (!q.length) { toast('Nothing saved yet.'); return; } download(`mahsr-survey-${stamp}.csv`, toCSV(q.map(r => flat(r.data))), 'text/csv;charset=utf-8'); }
+  if (act === 'json') { const q = queue(); if (!q.length) { toast('Nothing saved yet.'); return; } download(`mahsr-survey-${stamp}.json`, JSON.stringify(q.map(r => r.data), null, 2), 'application/json'); }
+  if (act === 'test') { await testConnection(); return; }
+  if (act === 'sync') {
+    if (!(prefs.endpoint || CONFIG.endpoint)) { toast('Add the Google Sheet link first.'); return; }
+    b.disabled = true; b.textContent = 'Syncing…';
+    const r = await syncAll(); openPanel();
+    toast(r.sent || r.failed ? `${r.sent} sent, ${r.failed} failed.` : 'Everything is already synced.');
+  }
+  if (act === 'purge') {
+    const q = queue(), keep = q.filter(r => !r.synced);
+    if (keep.length === q.length) { toast('Nothing synced yet, nothing to clear.'); return; }
+    if (confirm(`Remove ${q.length - keep.length} synced response(s) from this device? They stay in your sheet.`)) { store.set(KEYS.queue, keep); updateChip(); openPanel(); }
+  }
+});
+
+/* init */
+$('#projTitle').textContent = CONFIG.shortTitle || CONFIG.projectTitle;
+if (!STEPS.some(s => s.id === D.step)) D.step = 'cover';
+buildRoute(); render(false); updateChip();
+if (queue().some(r => !r.synced)) syncAll();
+})();
+</script>
+</body>
+</html>
