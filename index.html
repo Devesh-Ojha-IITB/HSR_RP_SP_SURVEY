@@ -133,18 +133,18 @@ select.inp:invalid{color:#6B7D8E}
 
 /* stated preference */
 .sp{border:2px solid var(--line);border-radius:16px;overflow:hidden;margin:0 0 20px}
-.sp-r{display:grid;grid-template-columns:27% minmax(0,1fr) minmax(0,1fr)}
-.sp-r>div{padding:11px 9px;border-top:1px solid var(--line)}
+.sp-r{display:grid;grid-template-columns:30% minmax(0,1fr) minmax(0,1fr)}
+.sp-r>div{padding:11px 8px;border-top:1px solid var(--line)}
 .sp-r:first-child>div{border-top:0}
-.sp-r .l{font-weight:700;color:var(--ink2);font-size:14px;display:flex;align-items:center;overflow-wrap:anywhere}
+.sp-r .l{font-weight:700;color:var(--ink2);font-size:13px;line-height:1.3;display:flex;align-items:center;hyphens:manual}
 .sp-r .e{background:#F3F8FD}
 .sp-r .h{background:#FFFAEB}
 .sp-hd .e{background:var(--rail-soft);color:var(--rail-d)}
 .sp-hd .h{background:var(--amber-soft);color:var(--amber-ink)}
 .sp-hd .e,.sp-hd .h{text-align:center;font-weight:700;font-size:16px;line-height:1.2}
 .sp-hd .e .em,.sp-hd .h .em{display:block;font-size:26px;margin-bottom:2px}
-.sp .v{font-size:20px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
-.sp .v.t{font-size:16px;line-height:1.25}
+.sp .v{font-size:18px;font-weight:700;line-height:1.2;overflow-wrap:break-word}
+.sp .v.t{font-size:15px;line-height:1.25}
 .sp .v small{display:block;font-size:13px;font-weight:400;color:var(--ink2);margin-top:2px}
 .scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .pick{border:2px solid var(--line);border-radius:12px;background:#fff;padding:12px 6px;min-height:64px;font-weight:700;font-size:14px;line-height:1.2;cursor:pointer}
@@ -244,15 +244,17 @@ const CONFIG = {
   // e.g. hero: 'images/hsr.jpg'. Leave '' to use the built-in drawings.
   images: { hero: '', example1: '', example2: '' },
 
-  // Stated-preference design: the 9 cards from your SP form (3 times x 3 costs).
-  cards: [
-    { n: 1, time: 120, cost: 2000 }, { n: 2, time: 120, cost: 3000 }, { n: 3, time: 120, cost: 5000 },
-    { n: 4, time: 180, cost: 2000 }, { n: 5, time: 180, cost: 3000 }, { n: 6, time: 180, cost: 5000 },
-    { n: 7, time: 250, cost: 2000 }, { n: 8, time: 250, cost: 3000 }, { n: 9, time: 250, cost: 5000 }
-  ],
+  // HSR levels for the stated-preference cards. `times` = HSR DOOR-TO-DOOR travel time (min), `costs` = HSR fare (₹).
+  // Every time level is combined with every cost level (3 x 3 = 9 cards), time-major order.
+  // Both sets must have the same number of cards.
+  spSets: {
+    upToSurat:   { label: 'Up to Surat',              times: [115, 125, 140], costs: [1200, 2000, 3000] },
+    beyondSurat: { label: 'Beyond Surat (Ahmedabad)', times: [230, 250, 280], costs: [2000, 3000, 5000] }
+  },
   nearWarnKm: 5,                         // warn if origin and destination pins are closer than this (km)
   randomizeCards: false,                 // true = shuffle card order for each respondent
-  hsr: { waiting: 10, waitingNote: 'Train in every 10 min', comfort: 5, comfortLabel: 'Very Good (5)', booking: 'Instant (Pay and travel)' }
+  // Attributes that stay the same on every card for High Speed Rail:
+  hsr: { comfort: 5, comfortLabel: 'Very Good (5)', luggage: 5, luggageLabel: 'Very Good (5)', booking: 'Instant (Pay and travel)' }
 };
 
 /* =====================================================================
@@ -319,6 +321,15 @@ const COMFORT = {
     ['Very High Comfort', 'Very spacious, clean and quiet; smooth ride, no crowding, comfortable seating.']
   ]
 };
+
+// Luggage carrying convenience, rated 1-5 for the respondent's own trip (any mode).
+const LUGGAGE = [
+  ['Very Low Convenience', 'Very difficult to carry luggage: no place to keep it, long walks or many steps with it, or you had to hold it yourself.'],
+  ['Low Convenience', 'Difficult: limited space, some walking or steps with luggage, or it was in the way of others.'],
+  ['Moderate Convenience', 'Manageable: some space available, but it took effort at stations, terminals or when getting in and out.'],
+  ['High Convenience', 'Easy: enough space for luggage, little walking, and help or trolleys available when needed.'],
+  ['Very High Convenience', 'Very easy: ample space right with you, little or no walking with luggage, door-to-door or porter / trolley help.']
+];
 
 const RESP = [  // SP response scale, same wording as your SP form
   { v: 1, mid: false, cls: 'ex1' }, { v: 2, mid: false, cls: 'ex2' }, { v: 3, cls: 'mid' },
@@ -711,6 +722,12 @@ function refreshNear() {
 }
 const syncOn = () => !!(prefs.endpoint || CONFIG.endpoint);
 
+function tripDirection() {
+  const o = (D.origin || {}).city, t = (D.dest || {}).city, M = OPT.city[0];
+  if (o === M && t && t !== M) return { direction: 'From Mumbai', far: t };
+  if (t === M && o && o !== M) return { direction: 'To Mumbai', far: o };
+  return { direction: 'Other', far: [o, t].filter(Boolean).join(' / ') };
+}
 function derive() {
   const legs = [...(D.legsBefore || []), ...(D.legsAfter || [])];
   const s = k => legs.reduce((a, l) => a + (num(l[k]) || 0), 0);
@@ -719,17 +736,36 @@ function derive() {
     total_time_min: Math.round(s('wait') + s('time') + (num(D.main.wait) || 0) + (num(D.main.time) || 0)),
     total_cost_inr: Math.round((s('cost') + (mainCost() || 0)) * 100) / 100,
     main_cost_inr: isFinite(mainCost()) ? Math.round(mainCost() * 100) / 100 : '',
+    direction: tripDirection().direction, far_city: tripDirection().far,
     od_straight_line_km: nearInfo() ? Math.round(nearInfo().km * 10) / 10 : '',
     od_close_but_confirmed: D.nearOk === NEAR_YES
   };
 }
 const COMFORT_NAMES = ['Very Low', 'Low', 'Moderate', 'High', 'Very High'];
-function cardAt(pos) { const n = (D.spOrder || CONFIG.cards.map(c => c.n))[pos]; return CONFIG.cards.find(c => c.n === n); }
+const NCARDS = Math.max(...Object.values(CONFIG.spSets).map(x => x.times.length * x.costs.length));
+const UP_TO_SURAT = ['Palghar / Vasai-Virar', 'Vapi / Valsad / Navsari', 'Surat'];
+function spCards() {
+  const set = CONFIG.spSets[D.spSet] || CONFIG.spSets.beyondSurat, out = []; let n = 0;
+  set.times.forEach(t => set.costs.forEach(c => out.push({ n: ++n, time: t, cost: c })));
+  return out;
+}
+function suggestSet() {
+  const o = D.origin || {}, t = D.dest || {}, M = OPT.city[0];
+  const far = o.city === M ? t.city : (t.city === M ? o.city : (t.city || o.city));
+  if (UP_TO_SURAT.includes(far)) return 'upToSurat';
+  if (far && far !== 'Other' && far !== M) return 'beyondSurat';
+  const i = nearInfo(); if (i) return i.km < 300 ? 'upToSurat' : 'beyondSurat';
+  return 'beyondSurat';
+}
+const enumSnap = () => JSON.stringify([D.main, D.legsBefore, D.legsAfter, D.comfort, D.luggage, D.booking, D.mainMode, D.origin && D.origin.city, D.dest && D.dest.city]);
+const spSetOptions = () => Object.keys(CONFIG.spSets).map(k => { const x = CONFIG.spSets[k];
+  return { v: k, l: x.label, sub: `Door-to-door time ${x.times.join(' / ')} min · Cost ${x.costs.map(fmtINR).join(' / ')}` }; });
+function cardAt(pos) { const n = (D.spOrder || spCards().map(c => c.n))[pos]; return spCards().find(c => c.n === n); }
 function prefillEnum() {
   const b = bookingOf(D.booking);
   D.enumCheck = {
-    time: D.main.time, cost: isFinite(mainCost()) ? mainCost() : '', wait: D.main.wait,
-    comfort: D.comfort, booking: D.booking || (b ? b.v : '')
+    time: derive().total_time_min || '', cost: isFinite(mainCost()) ? mainCost() : '',
+    comfort: D.comfort, luggage: D.luggage, booking: D.booking || (b ? b.v : '')
   };
 }
 
@@ -739,12 +775,25 @@ function prefillEnum() {
 const head = (t, s) => `<h2 class="h-sec">${t}</h2>${s ? `<p class="h-sub">${s}</p>` : ''}`;
 const part = t => `<h3 class="h-part">${t}</h3>`;
 const card = inner => `<section class="card">${inner}</section>`;
+const MUMBAI_REGION = ['Mumbai (incl. Navi Mumbai, Thane)', 'Palghar / Vasai-Virar'];
+// Example hints follow the city picked, so return trips (Gujarat to Mumbai) show the right examples.
+function placeHints(p) {
+  const city = (D[p] || {}).city;
+  const mumbaiStyle = city && city !== 'Other' ? MUMBAI_REGION.includes(city) : p === 'origin';
+  return mumbaiStyle
+    ? { loc: 'A specific place within the city (e.g., Anand Nagar, Kandivali etc.)', lm: 'A recognizable natural or artificial feature/building (e.g., Siddhivinayak Temple, KEM Hospital etc.)' }
+    : { loc: 'A specific place within the city (e.g., Chandkheda, Palgam etc.)', lm: 'A recognizable natural or artificial feature/building (e.g., Sardar Patel Museum, Sabarmati Ashram etc.)' };
+}
+function updateHints(p) {
+  const h = placeHints(p), a = $(`[data-field="${p}.locality"] .hint`), b = $(`[data-field="${p}.landmark"] .hint`);
+  if (a) a.textContent = h.loc; if (b) b.textContent = h.lm;
+}
 const originFields = p => [
   { key: p + '.city', type: 'select', label: p === 'origin' ? 'City / area where the trip started' : 'City / area where the trip ended', options: OPT.city },
   { key: p + '.locality', type: 'text', label: 'Locality',
-    hint: p === 'origin' ? 'A specific place within the city (e.g., Anand Nagar, Kandivali etc.)' : 'A specific place within the city (e.g., Chandkheda, Palgam etc.)' },
+    hint: placeHints(p).loc },
   { key: p + '.landmark', type: 'text', label: 'Landmark',
-    hint: p === 'origin' ? 'A recognizable natural or artificial feature/building (e.g., Siddhivinayak Temple, KEM Hospital etc.)' : 'A recognizable natural or artificial feature/building (e.g., Sardar Patel Museum, Sabarmati Ashram etc.)' }
+    hint: placeHints(p).lm }
 ];
 function coordCheck(p) {
   const o = D[p] || {};
@@ -832,27 +881,41 @@ const STEPS = [
 
   { id: 'D', sec: 'D', enter() { if (mode() && mode().noTicket) D.booking = 'Not applicable (private vehicle)'; },
     fields: () => {
-      const f = [{ key: 'comfort', type: 'tiles', long: true, cols: 1, label: `How would you rate the comfort of your current ${modeLabel().toLowerCase()} trip?`,
-        options: (D.mainMode === 'train' ? COMFORT.train : COMFORT.other).map((c, i) => ({ v: String(i + 1), l: `${i + 1} – ${c[0]}`, sub: c[1] })) }];
+      const f = [
+        { key: 'comfort', type: 'tiles', long: true, cols: 1, label: `How would you rate the comfort of your current ${modeLabel().toLowerCase()} trip?`,
+          options: (D.mainMode === 'train' ? COMFORT.train : COMFORT.other).map((c, i) => ({ v: String(i + 1), l: `${i + 1} – ${c[0]}`, sub: c[1] })) },
+        { key: 'luggage', type: 'tiles', long: true, cols: 1, label: `How would you rate the luggage carrying convenience of your current ${modeLabel().toLowerCase()} trip?`,
+          hint: 'Think about space for luggage, walking or climbing steps with it, and help available. If you carried no luggage, rate how convenient it would have been.',
+          options: LUGGAGE.map((c, i) => ({ v: String(i + 1), l: `${i + 1} – ${c[0]}`, sub: c[1] })) }];
       if (!(mode() && mode().noTicket)) f.push({ key: 'booking', type: 'select', label: 'How many days before your journey did you purchase this ticket?',
         options: OPT.booking.filter(b => !b.v.startsWith('Not applicable')).map(b => b.v) });
       return f;
     },
     html() {
       const F = this.fields();
-      return card(head('Section D: Comfort and Ticket Booking Behaviour') + fieldHTML(F[0]) + part('Ticket Purchase Behaviour')
-        + (F[1] ? fieldHTML(F[1]) : '<p class="t muted">Not applicable for a private vehicle.</p>'));
+      return card(head('Section D: Comfort, Luggage and Ticket Booking Behaviour') + fieldHTML(F[0]) + part('Luggage Carrying Convenience') + fieldHTML(F[1])
+        + part('Ticket Purchase Behaviour') + (F[2] ? fieldHTML(F[2]) : '<p class="t muted">Not applicable for a private vehicle.</p>'));
     }
   },
 
   { id: 'E', sec: 'SP', next: 'Confirm and continue',
-    enter() { const snap = JSON.stringify([D.main, D.comfort, D.booking, D.mainMode]); if (!D.enumCheck || D.enumSrc !== snap) { prefillEnum(); D.enumSrc = snap; } },
+    enter() {
+      const snap = enumSnap();
+      if (!D.enumCheck || D.enumSrc !== snap) {
+        prefillEnum(); D.enumSrc = snap;
+        if (!Object.keys(D.spAns || {}).length) { D.spSet = suggestSet(); D._spSetPrev = D.spSet; delete D.spOrder; }
+      }
+      if (!D.spSet) { D.spSet = suggestSet(); D._spSetPrev = D.spSet; }
+    },
     fields: () => [
-      { key: 'enumCheck.time', type: 'number', label: `Travel Time – ${modeLabel()}`, unit: 'mins', min: 1, max: 2880, int: true, hm: true },
+      { key: 'enumCheck.time', type: 'number', label: 'Door-to-door Travel Time', unit: 'mins', min: 1, max: 4320, int: true, hm: true,
+        hint: 'Total time from the start point to the destination: every leg plus the main mode, waiting included. Calculated from the trip answers.' },
       { key: 'enumCheck.cost', type: 'number', label: `Travel Cost – ${modeLabel()}`, prefix: '₹', min: 0, max: 500000, dec: true },
-      { key: 'enumCheck.wait', type: 'number', label: 'Waiting Time', unit: 'mins', min: 0, max: 720, int: true, hm: true },
       { key: 'enumCheck.comfort', type: 'select', label: 'Comfort', options: [1, 2, 3, 4, 5].map(n => ({ v: String(n), l: `${COMFORT_NAMES[n - 1]} (${n})` })) },
+      { key: 'enumCheck.luggage', type: 'select', label: 'Luggage Carrying Convenience', options: [1, 2, 3, 4, 5].map(n => ({ v: String(n), l: `${COMFORT_NAMES[n - 1]} (${n})` })) },
       { key: 'enumCheck.booking', type: 'select', label: 'Ticket Booking Time', options: OPT.booking.map(b => b.v) },
+      { key: 'spSet', type: 'tiles', long: true, cols: 1, label: 'Which High Speed Rail levels should this respondent see?',
+        hint: 'Chosen automatically from the trip’s cities. Change it only if it looks wrong.', options: spSetOptions() },
       { key: 'enumRemarks', type: 'textarea', label: 'Enumerator remarks', req: false, placeholder: 'Anything unusual about this interview' }],
     html() {
       return card(head('Below fields are to be filled by enumerator only!', 'Please check these values before handing the device to the respondent.')
@@ -862,45 +925,45 @@ const STEPS = [
   },
 
   { id: 'SP0', sec: 'SP', next: 'Start choice cards',
-    enter() { if (!D.spOrder) { const o = CONFIG.cards.map(c => c.n); if (CONFIG.randomizeCards) o.sort(() => Math.random() - .5); D.spOrder = o; } },
+    enter() { if (!D.spOrder) { const o = spCards().map(c => c.n); if (CONFIG.randomizeCards) o.sort(() => Math.random() - .5); D.spOrder = o; } },
     fields: () => [],
     html() {
       return card(head('Stated Preference Survey', 'Please indicate your preference between existing and proposed mode of travel based on the given characteristics.')
-        + `<p class="t">You will see ${CONFIG.cards.length} cards. Each card compares the trip you just described with a new <b>High Speed Rail</b> service for the same journey.</p>
+        + `<p class="t">You will see ${NCARDS} cards. Each card compares the trip you just described with a new <b>High Speed Rail</b> service for the same journey.</p>
         <div class="sp" aria-hidden="true"><div class="sp-r sp-hd"><div class="l"></div><div class="e"><span class="em">${esc(mode() ? mode().emoji : '🚆')}</span>Existing</div><div class="h"><span class="em">🚄</span>High Speed Rail</div></div></div>
-        <p class="t">Compare the travel time, cost, waiting time, comfort and ticket booking time. Then choose one of the five answers, from “Definitely ${esc(modeLabel())}” to “Definitely HSR”.</p>
+        <p class="t">Compare the <b>door-to-door travel time</b> (the whole journey from your start point to your destination, including waiting and getting to and from the station or airport), the cost, the comfort, the luggage carrying convenience and the ticket booking. Then choose one of the five answers, from “Definitely ${esc(modeLabel())}” to “Definitely HSR”.</p>
         <p class="t">There are no right or wrong answers. Assume High Speed Rail is available for this same journey.</p>`);
     }
   }
 ];
 
-CONFIG.cards.forEach((c, i) => STEPS.push({
-  id: 'SP' + (i + 1), sec: 'SP', pos: i, next: i === CONFIG.cards.length - 1 ? 'Review answers' : 'Next card',
+for (let i = 0; i < NCARDS; i++) STEPS.push({
+  id: 'SP' + (i + 1), sec: 'SP', pos: i, next: i === NCARDS - 1 ? 'Review answers' : 'Next card',
   fields: () => [],
   extra() { const c2 = cardAt(i); return get(`spAns.${c2.n}.resp`) ? {} : { [`spAns.${c2.n}.resp`]: 'Choose one of the five answers to continue.' }; },
   html() {
     const c2 = cardAt(i), ex = D.enumCheck || {}, L = modeLabel(), key = `spAns.${c2.n}.resp`, cur = get(key);
     const mins = v => { const n = num(v); return `${isFinite(n) ? n : '–'} mins${n >= 60 ? `<small>= ${hm(n)}</small>` : ''}`; };
-    const b = bookingOf(ex.booking), cn = parseInt(ex.comfort, 10);
+    const b = bookingOf(ex.booking), cn = parseInt(ex.comfort, 10), ln = parseInt(ex.luggage, 10);
     const row = (l, a, h, t) => `<div class="sp-r"><div class="l">${l}</div><div class="e v${t ? ' t' : ''}">${a}</div><div class="h v${t ? ' t' : ''}">${h}</div></div>`;
     const labels = [`Definitely ${L}`, 'May be Existing', 'Can’t Say', 'May be HSR', 'Definitely HSR'];
-    return card(`<div class="dots" aria-hidden="true">${CONFIG.cards.map((_, j) => `<i class="${j === i ? 'cur' : (get(`spAns.${cardAt(j).n}.resp`) ? 'on' : '')}"></i>`).join('')}</div>`
-      + head(`Card No. ${i + 1}`, `of ${CONFIG.cards.length} · Stated Preference Survey`)
+    return card(`<div class="dots" aria-hidden="true">${Array.from({ length: NCARDS }, (_, j) => `<i class="${j === i ? 'cur' : (get(`spAns.${cardAt(j).n}.resp`) ? 'on' : '')}"></i>`).join('')}</div>`
+      + head(`Card No. ${i + 1}`, `of ${NCARDS} · Stated Preference Survey`)
       + `<div class="sp"><div class="sp-r sp-hd"><div class="l"></div><div class="e"><span class="em">${esc(mode() ? mode().emoji : '🚆')}</span>${esc(L)}</div><div class="h"><span class="em">🚄</span>High Speed Rail</div></div>`
-      + row('Travel Time', mins(ex.time), mins(c2.time))
+      + row('Door-to-door Travel Time', mins(ex.time), mins(c2.time))
       + row('Travel Cost', fmtINR(num(ex.cost) || 0), fmtINR(c2.cost))
-      + row('Waiting Time', mins(ex.wait), `${mins(CONFIG.hsr.waiting).replace(/<small>.*$/, '')}<small>${esc(CONFIG.hsr.waitingNote)}</small>`)
       + row('Comfort', cn ? `${COMFORT_NAMES[cn - 1]} (${cn})` : '–', esc(CONFIG.hsr.comfortLabel), true)
+      + row('Luggage Carrying Conve&shy;nience', ln ? `${COMFORT_NAMES[ln - 1]} (${ln})` : '–', esc(CONFIG.hsr.luggageLabel), true)
       + row('Ticket Booking Time', esc(b ? b.short : (ex.booking || '–')), esc(CONFIG.hsr.booking), true)
       + `</div><div class="field${ERR[key] ? ' has-err' : ''}" data-field="${key}"><label class="lbl" id="resp-l">Which would you choose?</label>
         <div class="scale" role="group" aria-labelledby="resp-l">${RESP.map((r, j) => `<button type="button" class="pick ${r.cls}" data-card="${c2.n}" data-val="${r.v}" aria-pressed="${String(cur) === String(r.v)}">${esc(labels[j])}</button>`).join('')}</div>
         ${ERR[key] ? `<p class="err" role="alert">${esc(ERR[key])}</p>` : ''}</div>`);
   }
-}));
+});
 
 STEPS.push({ id: 'R', sec: 'Done', next: 'Save response', fields: () => [],
   html() {
-    const d = derive(), o = D.origin || {}, t = D.dest || {}, n = CONFIG.cards.filter(c => get(`spAns.${c.n}.resp`)).length;
+    const d = derive(), o = D.origin || {}, t = D.dest || {}, n = spCards().filter(c => get(`spAns.${c.n}.resp`)).length;
     const row = (a, b) => `<dt>${esc(a)}</dt><dd>${esc(b == null || b === '' ? '–' : b)}</dd>`;
     return card(head('Review and save', 'Check the summary, then save this response.')
       + `<dl class="sum">${row('Response ID', D.id)}${row('Enumerator', D.enumerator)}${row('Respondent', `${D.gender || '–'}, ${D.age || '–'} years`)}
@@ -908,7 +971,7 @@ STEPS.push({ id: 'R', sec: 'Done', next: 'Save response', fields: () => [],
         ${row('To', `${t.locality || '–'} (${t.city || '–'})`)}${row('Destination coordinates', isNum(t.lat) ? `${t.lat}, ${t.lng}` : '')}
         ${row('Purpose', D.purpose)}${row('Main mode', `${modeLabel()} · ${D.cls || ''}`)}
         ${row('Legs', `${d.legs_before} before, ${d.legs_after} after`)}${row('Door-to-door time', hm(d.total_time_min))}
-        ${row('Total cost', fmtINR(d.total_cost_inr))}${row('Origin to destination', nearInfo() ? fmtDist(nearInfo().km) + ' in a straight line' : '')}${row('Choice cards answered', `${n} of ${CONFIG.cards.length}`)}</dl>
+        ${row('Total cost', fmtINR(d.total_cost_inr))}${row('Direction', `${tripDirection().direction} (${tripDirection().far || '–'})`)}${row('Origin to destination', nearInfo() ? fmtDist(nearInfo().km) + ' in a straight line' : '')}${row('HSR level set', (CONFIG.spSets[D.spSet] || {}).label)}${row('Choice cards answered', `${n} of ${NCARDS}`)}</dl>
         ${syncOn() ? '<p class="muted">When you save, this response is sent to your Google Sheet automatically.</p>' : '<div class="banner">No Google Sheet is connected, so this response will be saved on this device only.</div>'}
         <label class="lbl" for="f_finalNotes">Anything else to note? <span class="opt">optional</span></label>
         <textarea class="inp" id="f_finalNotes" data-key="finalNotes" rows="3">${esc(D.finalNotes)}</textarea>`);
@@ -979,7 +1042,10 @@ $('#back').addEventListener('click', () => { if (!DONE) go(-1); });
 
 function afterSet(key, val) {
   let m;
-  if (key === 'mainMode') {
+  if (key === 'spSet') {
+    if (Object.keys(D.spAns || {}).length && !confirm('Changing the level set clears the choice cards already answered. Continue?')) { D.spSet = D._spSetPrev; return; }
+    D.spAns = {}; delete D.spOrder; D._spSetPrev = val;
+  } else if (key === 'mainMode') {
     const mm = MODES[val];
     if (D.cls && !mm.cls.includes(D.cls)) delete D.cls;
     if (mm.noTicket) D.booking = 'Not applicable (private vehicle)';
@@ -1013,7 +1079,10 @@ stage.addEventListener('input', e => {
 });
 stage.addEventListener('change', e => {
   const t = e.target;
-  if (t.dataset.select) { set(t.dataset.key, t.value); if (ERR[t.dataset.key]) setFieldError(t.dataset.key, ''); afterSet(t.dataset.key, t.value); save(); }
+  if (t.dataset.select) {
+    set(t.dataset.key, t.value); if (ERR[t.dataset.key]) setFieldError(t.dataset.key, ''); afterSet(t.dataset.key, t.value); save();
+    const cm = t.dataset.key.match(/^(origin|dest)\.city$/); if (cm) updateHints(cm[1]);
+  }
   if (t.dataset.coordinput) {
     const p = t.dataset.coordinput, c = parseCoords(t.value);
     if (!t.value.trim()) return;
@@ -1029,13 +1098,13 @@ stage.addEventListener('click', e => {
   }
   const pick = e.target.closest('.pick');
   if (pick) {
-    const n = pick.dataset.card, c = CONFIG.cards.find(x => String(x.n) === n), ex = D.enumCheck || {};
+    const n = pick.dataset.card;
     D.spAns[n] = Object.assign(D.spAns[n] || {}, { resp: +pick.dataset.val, answered_at: new Date().toISOString() });
     delete ERR[`spAns.${n}.resp`]; save(); render(true); return;
   }
   const a = e.target.closest('[data-act]'); if (!a) return;
   const p = a.dataset.prefix;
-  if (a.dataset.act === 'enumreset') { prefillEnum(); D.enumSrc = JSON.stringify([D.main, D.comfort, D.booking, D.mainMode]); save(); render(true); toast('Reset to the respondent’s answers.'); }
+  if (a.dataset.act === 'enumreset') { prefillEnum(); D.enumSrc = enumSnap(); save(); render(true); toast('Reset to the respondent’s answers.'); }
   if (a.dataset.act === 'clear') clearPoint(p);
   if (a.dataset.act === 'copy') { const o = get(p) || {}; const t = `${o.lat}, ${o.lng}`; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Coordinates copied.')).catch(() => toast(t)); }
   if (a.dataset.act === 'gps') {
@@ -1063,11 +1132,11 @@ function flat(o, p, out) {
 function buildRecord() {
   const d = derive(), ex = D.enumCheck || {}, o = D.origin || {}, t = D.dest || {};
   const sp = {};
-  (D.spOrder || CONFIG.cards.map(c => c.n)).forEach((n, pos) => {
-    const c = CONFIG.cards.find(x => x.n === n), a = D.spAns[n] || {};
+  (D.spOrder || spCards().map(c => c.n)).forEach((n, pos) => {
+    const c = spCards().find(x => x.n === n), a = D.spAns[n] || {};
     sp['card' + n] = { position: pos + 1, response: a.resp || '', answered_at: a.answered_at || '',
-      hsr_time_min: c.time, hsr_cost_inr: c.cost, hsr_wait_min: CONFIG.hsr.waiting, hsr_comfort: CONFIG.hsr.comfort,
-      existing_time_min: ex.time, existing_cost_inr: ex.cost, existing_wait_min: ex.wait, existing_comfort: ex.comfort, existing_booking: ex.booking };
+      hsr_door_to_door_time_min: c.time, hsr_cost_inr: c.cost, hsr_comfort: CONFIG.hsr.comfort, hsr_luggage: CONFIG.hsr.luggage,
+      existing_door_to_door_time_min: ex.time, existing_cost_inr: ex.cost, existing_comfort: ex.comfort, existing_luggage: ex.luggage, existing_booking: ex.booking };
   });
   const place = p => ({ city: p.city, lat: p.lat, lng: p.lng, address: p.address, locality: p.locality, landmark: p.landmark });
   return {
@@ -1078,8 +1147,9 @@ function buildRecord() {
     C_origin: place(o), C_dest: place(t), C_purpose: D.purpose, C_main_mode: modeLabel(), C_class: D.cls,
     C_legs_before: keyed(D.legsBefore), C_legs_after: keyed(D.legsAfter),
     C_main: { time_min: D.main.time, cost_inr: D.main.cost, wait_min: D.main.wait },
-    D_comfort: D.comfort, D_booking: D.booking,
-    SP_check: { time_min: ex.time, cost_inr: ex.cost, wait_min: ex.wait, comfort: ex.comfort, booking: ex.booking, remarks: D.enumRemarks || '' },
+    D_comfort: D.comfort, D_luggage: D.luggage, D_booking: D.booking,
+    SP_level_set: (CONFIG.spSets[D.spSet] || {}).label || '',
+    SP_check: { door_to_door_time_min: ex.time, cost_inr: ex.cost, comfort: ex.comfort, luggage: ex.luggage, booking: ex.booking, remarks: D.enumRemarks || '' },
     SP: sp, derived: d, notes: D.finalNotes || ''
   };
 }
